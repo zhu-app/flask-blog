@@ -1,0 +1,38 @@
+{% extends "admin/layout.html" %}
+{% block title %}用户管理{% endblock %}
+{% block content %}
+<h1>👥 用户管理</h1>
+
+<table class="admin-table">
+    <thead>
+        <tr><th>ID</th><th>用户名</th><th>邮箱</th><th>角色</th><th>文章数</th><th>注册时间</th><th>操作</th></tr>
+    </thead>
+    <tbody>
+        {% for u in users %}
+        <tr>
+            <td>{{ u.id }}</td>
+            <td><a href="/user/{{ u.username }}">{{ u.username }}</a></td>
+            <td>{{ u.email }}</td>
+            <td>{% if u.role == 'admin' %}👑 管理员{% else %}👤 用户{% endif %}</td>
+            <td>{{ u.post_count }}</td>
+            <td>{{ u.created_at.strftime('%Y-%m-%d') }}</td>
+            <td class="admin-actions">
+                {% if u.id != current_user.id %}
+                <form method="POST" action="/admin/users/{{ u.id }}/toggle-admin" style="display:inline">
+                    <button class="btn-sm {% if u.role == 'admin' %}btn-warning{% else %}btn-primary{% endif %}"
+                            onclick="return confirm('确认{{ "取消" if u.role == 'admin' else "设为" }}管理员？')">
+                        {{ "取消管理员" if u.role == 'admin' else "设为管理员" }}
+                    </button>
+                </form>
+                <form method="POST" action="/admin/users/{{ u.id }}/delete" style="display:inline">
+                    <button class="btn-sm btn-danger" onclick="return confirm('确认删除用户 {{ u.username }}？所有文章和评论也会被删除')">删除</button>
+                </form>
+                {% else %}
+                <span class="text-muted">当前用户</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

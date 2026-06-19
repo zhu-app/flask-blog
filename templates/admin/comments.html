@@ -1,0 +1,29 @@
+{% extends "admin/layout.html" %}
+{% block title %}评论管理{% endblock %}
+{% block content %}
+<h1>💬 评论管理</h1>
+
+<table class="admin-table">
+    <thead>
+        <tr><th>ID</th><th>内容</th><th>评论者</th><th>所属文章</th><th>时间</th><th>操作</th></tr>
+    </thead>
+    <tbody>
+        {% for c in comments %}
+        <tr>
+            <td>{{ c.id }}</td>
+            <td>{{ c.content[:50] }}{% if c.content|length > 50 %}...{% endif %}</td>
+            <td>{{ c.author.username if c.author else '未知' }}</td>
+            <td><a href="/post/{{ c.post.id }}">{{ c.post.title[:30] if c.post else '已删除' }}</a></td>
+            <td>{{ c.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td class="admin-actions">
+                <form method="POST" action="/admin/comments/{{ c.id }}/delete" style="display:inline">
+                    <button class="btn-sm btn-danger" onclick="return confirm('确认删除评论？')">删除</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="empty-td">暂无评论</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

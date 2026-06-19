@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}管理后台{% endblock %} - 我的博客</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container nav-content">
+            <a href="/" class="logo">📝 我的博客</a>
+            <div class="nav-links">
+                <span>欢迎, {{ current_user.username }}</span>
+                <a href="/">返回首页</a>
+                <a href="/logout">退出</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="admin-layout">
+        <aside class="admin-sidebar">
+            <ul>
+                <li><a href="/admin" class="{% if request.path == '/admin' %}active{% endif %}">📊 概览</a></li>
+                <li><a href="/admin/posts" class="{% if request.path.startswith('/admin/posts') %}active{% endif %}">📝 文章管理</a></li>
+                <li><a href="/admin/comments" class="{% if request.path.startswith('/admin/comments') %}active{% endif %}">💬 评论管理</a></li>
+                <li><a href="/admin/users" class="{% if request.path.startswith('/admin/users') %}active{% endif %}">👥 用户管理</a></li>
+                <li><a href="/admin/categories" class="{% if request.path.startswith('/admin/categories') %}active{% endif %}">🏷️ 分类管理</a></li>
+            </ul>
+        </aside>
+
+        <main class="admin-content">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+              {% if messages %}
+                {% for category, message in messages %}
+                  <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+              {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</body>
+</html>

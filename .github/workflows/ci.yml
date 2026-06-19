@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: test123
+          MYSQL_DATABASE: blog_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd "mysqladmin ping -h localhost -u root -ptest123"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 设置 Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: 安装依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: 等待 MySQL 就绪
+        run: |
+          for i in $(seq 1 30); do
+            if mysqladmin ping -h 127.0.0.1 -u root -ptest123 --silent; then
+              echo "MySQL 已就绪"
+              break
+            fi
+            echo "等待 MySQL... ($i)"
+            sleep 2
+          done
+
+      - name: 运行测试
+        env:
+          DATABASE_URL: mysql+pymysql://root:test123@127.0.0.1:3306/blog_test?charset=utf8mb4
+          SECRET_KEY: ci-secret-key-32-bytes-long-for-test!!
+          JWT_SECRET_KEY: ci-jwt-secret-key-32-bytes-long-for!!
+        run: |
+          python init_db.py
+          python -m pytest tests/ -v --tb=short
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 设置 Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: 安装 flake8
+        run: pip install flake8
+
+      - name: 代码风格检查
+        run: flake8 . --max-line-length=120 --exclude=migrations,__pycache__,uploads --ignore=E402,W503

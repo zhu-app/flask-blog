@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>500 - 服务器错误</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="container nav-content">
+            <a href="/" class="logo">📝 我的博客</a>
+            <div class="nav-links">
+                {% if current_user %}
+                    <span>欢迎, {{ current_user.username }}</span>
+                    <a href="/write">写文章</a>
+                    <a href="/logout">退出</a>
+                {% else %}
+                    <a href="/login">登录</a>
+                    <a href="/register">注册</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+    <main class="container">
+        <div class="error-page">
+            <h1>500</h1>
+            <p>服务器内部错误，请稍后再试</p>
+            <a href="{{ url_for('posts.index') }}" class="btn btn-primary">返回首页</a>
+        </div>
+    </main>
+</body>
+</html>

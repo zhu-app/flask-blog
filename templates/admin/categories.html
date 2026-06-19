@@ -1,0 +1,34 @@
+{% extends "admin/layout.html" %}
+{% block title %}分类管理{% endblock %}
+{% block content %}
+<h1>🏷️ 分类管理</h1>
+
+<div class="admin-card" style="margin-bottom:20px">
+    <form method="POST" action="/admin/categories/create" class="inline-form">
+        <input type="text" name="name" placeholder="新分类名称" required>
+        <button type="submit" class="btn-primary" style="width:auto;padding:10px 24px">添加分类</button>
+    </form>
+</div>
+
+<table class="admin-table">
+    <thead>
+        <tr><th>ID</th><th>名称</th><th>文章数</th><th>操作</th></tr>
+    </thead>
+    <tbody>
+        {% for cat in categories %}
+        <tr>
+            <td>{{ cat.id }}</td>
+            <td>{{ cat.name }}</td>
+            <td>{{ cat.posts|length }}</td>
+            <td class="admin-actions">
+                <form method="POST" action="/admin/categories/{{ cat.id }}/delete" style="display:inline">
+                    <button class="btn-sm btn-danger" onclick="return confirm('删除分类「{{ cat.name }}」？关联的文章不会被删除，但分类会被清空。')">删除</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="4" class="empty-td">暂无分类</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}

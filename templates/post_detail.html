@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ post.title }} - 我的博客</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container nav-content">
+            <a href="/" class="logo">📝 我的博客</a>
+            <div class="nav-links">
+                {% if current_user %}
+                    <span>欢迎, {{ current_user.username }}</span>
+                    <a href="/write">写文章</a>
+                    <a href="/logout">退出</a>
+                {% else %}
+                    <a href="/login">登录</a>
+                    <a href="/register">注册</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <div class="container main-content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <a href="/" class="back-link">← 返回首页</a>
+
+        <!-- 文章详情 -->
+        <article class="post-detail">
+            <h1>{{ post.title }}</h1>
+            <div class="post-meta">
+                <span>✍️ <a href="/user/{{ post.author.username }}">{{ post.author.username }}</a></span>
+                <span>📅 {{ post.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                {% if post.category %}
+                <span>🏷️ {{ post.category.name }}</span>
+                {% endif %}
+                <span>👁️ {{ post.views }}</span>
+                {% if current_user and post.author and post.author.id == current_user.id %}
+                    <a href="/edit/{{ post.id }}" class="edit-btn">编辑</a>
+                {% endif %}
+            </div>
+
+            <!-- 点赞 -->
+            <div class="like-bar">
+                <button id="likeBtn" class="like-btn {% if liked %}liked{% endif %}"
+                        onclick="toggleLike({{ post.id }})">
+                    ❤️ <span id="likeCount">{{ post.likes }}</span>
+                </button>
+            </div>
+
+            <!-- Markdown 渲染正文 -->
+            <div class="post-body md-rendered">
+                {{ post.html_content|safe }}
+            </div>
+        </article>
+
+        <!-- 评论区 -->
+        <section class="comments-section">
+            <h3>💬 评论区 ({{ post.comments|length }})</h3>
+
+            {% if current_user %}
+            <form method="POST" action="/post/{{ post.id }}/comment" class="comment-form">
+                <textarea name="content" placeholder="写下你的评论..." rows="3"></textarea>
+                <button type="submit">发表评论</button>
+            </form>
+            {% else %}
+            <p><a href="/login">登录</a>后才能评论</p>
+            {% endif %}
+
+            <div class="comments-list">
+                {% for comment in post.comments %}
+                <div class="comment-item">
+                    <div class="comment-header">
+                        <strong><a href="/user/{{ comment.author.username }}">{{ comment.author.username }}</a></strong>
+                        <span class="comment-time">{{ comment.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+                    </div>
+                    <p class="comment-content">{{ comment.content }}</p>
+                </div>
+                {% else %}
+                <p class="no-comments">暂无评论，快来抢沙发吧！</p>
+                {% endfor %}
+            </div>
+        </section>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>
+        hljs.highlightAll();
+
+        async function toggleLike(postId) {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                alert('请先登录后再点赞');
+                return;
+            }
+            const btn = document.getElementById('likeBtn');
+            const countSpan = document.getElementById('likeCount');
+            try {
+                const res = await fetch('/api/posts/' + postId + '/like', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    countSpan.textContent = data.likes;
+                    btn.classList.toggle('liked', data.liked);
+                }
+            } catch(e) {
+                console.error(e);
+            }
+        }
+    </script>
+
+    <footer class="footer">
+        <div class="container">
+            <p>© 2026 我的博客 | Flask + MySQL</p>
+        </div>
+    </footer>
+</body>
+</html>

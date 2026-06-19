@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% if editing %}编辑文章{% else %}写文章{% endif %} - 我的博客</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container nav-content">
+            <a href="/" class="logo">📝 我的博客</a>
+            <div class="nav-links">
+                <span>欢迎, {{ current_user.username }}</span>
+                <a href="/">首页</a>
+                <a href="/logout">退出</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container main-content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <h1>{% if editing %}编辑文章{% else %}写一篇文章{% endif %}</h1>
+
+        <form method="POST" action="{% if editing %}/edit/{{ post.id }}{% else %}/publish{% endif %}" class="post-form">
+            <input type="text" name="title" placeholder="文章标题" value="{{ post.title if editing else '' }}" required>
+
+            <!-- 分类选择 -->
+            <select name="category_id" class="category-select">
+                <option value="">-- 选择分类（可选）--</option>
+                {% for cat in categories %}
+                <option value="{{ cat.id }}" {% if editing and post.category_id == cat.id %}selected{% endif %}>
+                    {{ cat.name }}
+                </option>
+                {% endfor %}
+            </select>
+
+            <!-- Markdown 工具栏 -->
+            <div class="md-toolbar">
+                <button type="button" onclick="insertMd('**','**')" title="加粗"><b>B</b></button>
+                <button type="button" onclick="insertMd('*','*')" title="斜体"><i>I</i></button>
+                <button type="button" onclick="insertMd('## ','')" title="标题">H2</button>
+                <button type="button" onclick="insertMd('- ','')" title="列表">•</button>
+                <button type="button" onclick="insertMd('> ','')" title="引用">❞</button>
+                <button type="button" onclick="insertMd('```\n','\n```')" title="代码"><>_</button>
+                <button type="button" onclick="insertMd('[','](url)')" title="链接">🔗</button>
+                <button type="button" onclick="uploadImage()" title="图片">🖼</button>
+                <input type="file" id="imageInput" accept="image/*" style="display:none" onchange="handleImage(this)">
+                <span class="md-toolbar-sep">|</span>
+                <button type="button" onclick="togglePreview()" id="previewBtn">👁 预览</button>
+            </div>
+
+            <!-- 编辑区 + 预览区 -->
+            <div class="md-editor">
+                <textarea name="content" id="mdContent" placeholder="支持 Markdown 语法..." rows="18" required>{{ post.content if editing else '' }}</textarea>
+                <div id="mdPreview" class="md-preview" style="display:none;"></div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit">{% if editing %}更新文章{% else %}发布文章{% endif %}</button>
+                <a href="/" class="cancel-btn">取消</a>
+            </div>
+        </form>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.1/marked.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>
+        const textarea = document.getElementById('mdContent');
+        const preview = document.getElementById('mdPreview');
+
+        // 插入 Markdown 语法
+        function insertMd(before, after) {
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const text = textarea.value;
+            const selected = text.substring(start, end);
+            textarea.value = text.substring(0, start) + before + selected + after + text.substring(end);
+            textarea.focus();
+            const pos = start + before.length;
+            textarea.setSelectionRange(pos, pos + selected.length);
+        }
+
+        // 图片上传
+        function uploadImage() {
+            document.getElementById('imageInput').click();
+        }
+
+        async function handleImage(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const btn = document.querySelector('[title="图片"]');
+            btn.textContent = '⏳';
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const token = localStorage.getItem('token');
+                const res = await fetch('/api/upload', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token },
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const md = `![${file.name}](${data.url})`;
+                    const start = textarea.selectionStart;
+                    textarea.value = textarea.value.substring(0, start) + md + textarea.value.substring(textarea.selectionEnd);
+                    textarea.focus();
+                } else {
+                    alert('上传失败: ' + data.message);
+                }
+            } catch (e) {
+                alert('上传出错');
+            }
+            btn.textContent = '🖼';
+            input.value = '';
+        }
+
+        // 切换预览
+        let previewVisible = false;
+        function togglePreview() {
+            previewVisible = !previewVisible;
+            document.getElementById('previewBtn').textContent = previewVisible ? '✏ 编辑' : '👁 预览';
+            textarea.style.display = previewVisible ? 'none' : 'block';
+            preview.style.display = previewVisible ? 'block' : 'none';
+            if (previewVisible) {
+                const html = marked.parse(textarea.value, { breaks: true });
+                preview.innerHTML = html;
+                if (hljs) hljs.highlightAll();
+            }
+        }
+
+        // 输入时自动更新预览（如果预览可见）
+        textarea.addEventListener('input', function() {
+            if (previewVisible) {
+                const html = marked.parse(textarea.value, { breaks: true });
+                preview.innerHTML = html;
+                if (hljs) hljs.highlightAll();
+            }
+        });
+    </script>
+
+    <footer class="footer">
+        <div class="container">
+            <p>© 2026 我的博客 | Flask + MySQL</p>
+        </div>
+    </footer>
+</body>
+</html>

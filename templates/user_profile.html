@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ profile_user.username }} - 个人主页</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container nav-content">
+            <a href="/" class="logo">📝 我的博客</a>
+            <div class="nav-links">
+                {% if current_user %}
+                    <span>欢迎, {{ current_user.username }}</span>
+                    <a href="/write">写文章</a>
+                    <a href="/logout">退出</a>
+                {% else %}
+                    <a href="/login">登录</a>
+                    <a href="/register">注册</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <div class="container main-content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <div class="profile-header">
+            <div class="profile-avatar">👤</div>
+            <h1>{{ profile_user.username }}</h1>
+            <div class="profile-meta">
+                <span>📅 加入于 {{ profile_user.created_at.strftime('%Y-%m-%d') }}</span>
+                <span>📝 {{ profile_user.post_count }} 篇文章</span>
+                <span>💬 {{ profile_user.comment_count }} 条评论</span>
+            </div>
+            {% if current_user and current_user.id == profile_user.id %}
+                <span class="profile-badge">这是我的主页</span>
+            {% endif %}
+        </div>
+
+        <h2 class="section-title">文章列表</h2>
+        <div class="posts-list">
+            {% for post in posts %}
+            <div class="post-card">
+                <h2><a href="/post/{{ post.id }}">{{ post.title }}</a></h2>
+                <div class="post-meta">
+                    {% if post.category %}<span>🏷️ {{ post.category.name }}</span>{% endif %}
+                    <span>📅 {{ post.created_at.strftime('%Y-%m-%d') }}</span>
+                    <span>👁️ {{ post.views }} 阅读</span>
+                    <span>❤️ {{ post.likes }} 点赞</span>
+                    <span>💬 {{ post.comment_count }} 评论</span>
+                </div>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <p>还没有写过文章</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>© 2026 我的博客 | Flask + MySQL</p>
+        </div>
+    </footer>
+</body>
+</html>
