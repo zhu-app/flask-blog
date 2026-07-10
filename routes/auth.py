@@ -1,8 +1,12 @@
+import re
 from flask import Blueprint, request, jsonify, render_template, redirect, url_for, session
 from flask_jwt_extended import create_access_token
 from models import db, User, Post
 
 auth_bp = Blueprint('auth', __name__)
+
+# 邮箱正则
+EMAIL_RE = re.compile(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
 
 
 # ========== API 路由 ==========
@@ -61,6 +65,9 @@ def api_register():
 
     if len(password) < 6:
         return jsonify({'success': False, 'message': '密码至少6位'}), 400
+
+    if not EMAIL_RE.match(email):
+        return jsonify({'success': False, 'message': '邮箱格式不正确'}), 400
 
     if User.query.filter_by(username=username).first():
         return jsonify({'success': False, 'message': '用户名已存在'}), 400

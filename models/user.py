@@ -1,5 +1,6 @@
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
+from sqlalchemy import func
 from . import db
 
 
@@ -7,8 +8,8 @@ class User(db.Model):
     __tablename__ = 'users'
 
     id: int = db.Column(db.Integer, primary_key=True)
-    username: str = db.Column(db.String(80), unique=True, nullable=False)
-    email: str = db.Column(db.String(120), unique=True, nullable=False)
+    username: str = db.Column(db.String(80), unique=True, nullable=False, index=True)
+    email: str = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password_hash: str = db.Column(db.String(256), nullable=False)
     created_at: datetime = db.Column(db.DateTime, default=datetime.utcnow, index=True)
     role: str = db.Column(db.String(20), default='user', index=True)
@@ -24,11 +25,13 @@ class User(db.Model):
 
     @property
     def post_count(self) -> int:
-        return len(self.posts)
+        from .post import Post
+        return db.session.query(func.count(Post.id)).filter(Post.user_id == self.id).scalar() or 0
 
     @property
     def comment_count(self) -> int:
-        return len(self.comments)
+        from .comment import Comment
+        return db.session.query(func.count(Comment.id)).filter(Comment.user_id == self.id).scalar() or 0
 
     def to_dict(self) -> dict:
         return {

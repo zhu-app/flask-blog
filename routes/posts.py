@@ -6,7 +6,7 @@ from feedgen.feed import FeedGenerator
 from flask_jwt_extended import get_jwt_identity
 from werkzeug.utils import secure_filename
 from utils import login_required_web, login_required_api
-from models import db, Post, Category, Like
+from models import db, User, Post, Category, Like
 from sqlalchemy.orm import joinedload
 
 posts_bp = Blueprint('posts', __name__)
@@ -152,6 +152,14 @@ def api_create_post():
 @login_required_api
 def api_update_post(post_id):
     post = Post.query.get_or_404(post_id)
+    user_id = int(get_jwt_identity())
+
+    # 检查所有权：只有作者或管理员可以编辑
+    if post.user_id != user_id:
+        user = User.query.get(user_id)
+        if not user or user.role != 'admin':
+            return jsonify({'success': False, 'message': '无权修改他人文章'}), 403
+
     data = request.get_json()
 
     post.title = data.get('title', post.title)
@@ -167,6 +175,14 @@ def api_update_post(post_id):
 @login_required_api
 def api_delete_post(post_id):
     post = Post.query.get_or_404(post_id)
+    user_id = int(get_jwt_identity())
+
+    # 检查所有权：只有作者或管理员可以删除
+    if post.user_id != user_id:
+        user = User.query.get(user_id)
+        if not user or user.role != 'admin':
+            return jsonify({'success': False, 'message': '无权删除他人文章'}), 403
+
     db.session.delete(post)
     db.session.commit()
 
@@ -327,6 +343,13 @@ def publish_post():
 @login_required_web
 def edit_post(post_id):
     post = Post.query.get_or_404(post_id)
+
+    # 检查所有权：只有作者或管理员可以编辑
+    if post.user_id != session['user_id']:
+        user = User.query.get(session['user_id'])
+        if not user or user.role != 'admin':
+            flash('无权编辑他人文章', 'error')
+            return redirect(url_for('posts.index'))
 
     if request.method == 'POST':
         post.title = request.form.get('title', post.title).strip()

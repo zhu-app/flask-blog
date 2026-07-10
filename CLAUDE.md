@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code when working with code in this repository.
 
 ## Project Overview
 
@@ -76,6 +76,13 @@ Uses **both Flask Session (web pages) and JWT (API)** simultaneously:
 - **API routes**: use `@login_required_api` — wraps `@jwt_required()` from flask-jwt-extended to verify JWT Bearer token
 - **Admin routes**: use `@admin_required` wrapper (in `routes/admin.py`) — chains `@login_required_web` + checks `user.role == 'admin'`
 
+### Ownership Protection
+
+Since v1.0.0, article edit/delete operations check **ownership**:
+- API: `api_update_post` and `api_delete_post` verify `post.user_id == current_user_id` or `user.role == 'admin'`
+- Web: `edit_post` route checks session user_id against post author
+- Returns 403 if unauthorized
+
 ### Application Factory
 
 `app.py` uses `create_app(config_class=None)` factory pattern. Accepts optional config class for testing (uses SQLite in-memory). Registers 4 blueprints:
@@ -93,13 +100,17 @@ Factory also sets up:
 - Swagger UI via flasgger
 - Flask-Migrate for Alembic migrations
 
+### Database Initialization
+
+The `create_app()` factory tries to create database tables on startup. If the database is unavailable (e.g., MySQL not ready yet), it logs a warning and continues running — the app won't crash. Run `python init_db.py` to create tables and seed data manually.
+
 ### Data Models
 
 Models split into individual files under `models/`:
 
 - `models/__init__.py` — exports `db`, re-exports all models (`User`, `Category`, `Post`, `Comment`, `Like`)
-- **User** — `id`, `username`, `email`, `password_hash`, `role` (user/admin), `created_at`. Has `set_password()`/`check_password()` methods using Werkzeug. Type-annotated properties: `post_count`, `comment_count`.
-- **Post** — `id`, `title`, `content`, `user_id`, `category_id`, `views`, `likes`, timestamps. Content is raw Markdown.
+- **User** — `id`, `username`, `email`, `password_hash`, `role` (user/admin), `created_at`. Uses SQL `COUNT()` queries for `post_count`/`comment_count` properties (not `len()`).
+- **Post** — `id`, `title`, `content`, `user_id`, `category_id`, `views`, `likes`, timestamps. Content is raw Markdown. Has `likes_count` property for accurate Like table counts.
 - **Comment** — `id`, `content`, `post_id`, `user_id`, `created_at`.
 - **Category** — `id`, `name`.
 - **Like** — `id`, `user_id`, `post_id`, `created_at`. Has `UniqueConstraint` on `(user_id, post_id)`.
@@ -124,20 +135,24 @@ Every feature has both an **API endpoint** (JSON, JWT-protected) and a **web pag
 
 Post content is stored as raw Markdown. Rendering happens in `posts.post_detail()` using `markdown.markdown()` with extensions: `fenced_code`, `codehilite`, `tables`, `nl2br`.
 
+### Email Validation
+
+Registration endpoint validates email format using regex before accepting new users.
+
 ### Admin Permissions
 
 `admin.py` defines an `@admin_required` decorator that chains with `@login_required_web` and checks `user.role == 'admin'`.
 
 ### Deployment
 
-- `Dockerfile`: Python 3.10-slim, installs deps, runs `python app.py`
-- `docker-compose.yml`: web service + MySQL 8.0 service with persisted volume
+- `Dockerfile`: Python 3.10-slim multi-stage build
+- `docker-compose.yml`: web service + MySQL 8.0 service with health checks
 - `config.py`: reads `DATABASE_URL`, `SECRET_KEY`, `JWT_SECRET_KEY` from env vars with fallback defaults (warns on defaults)
 - Default admin account is created by `init_db.py`: `admin / 123456`
 
 ### File Uploads
 
-Uploaded images go to `uploads/` directory. Served via `@app.route('/uploads/<path:filename>')`. Filenames are sanitized with `secure_filename` and deduplicated with timestamps.
+Uploaded images go to `uploads/` directory. Served via `@app.route('/uploads/<path:filename>')`. Filenames are sanitized with `secure_filename` and deduplicated with timestamps. Only whitelisted extensions (png, jpg, jpeg, gif, webp, svg) are allowed.
 
 ### Testing
 

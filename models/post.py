@@ -1,4 +1,5 @@
 from datetime import datetime
+from sqlalchemy import func
 from . import db
 
 
@@ -20,7 +21,13 @@ class Post(db.Model):
 
     @property
     def comment_count(self) -> int:
-        return len(self.comments)
+        from .comment import Comment
+        return db.session.query(func.count(Comment.id)).filter(Comment.post_id == self.id).scalar() or 0
+
+    @property
+    def likes_count(self) -> int:
+        from .like import Like
+        return db.session.query(func.count(Like.id)).filter(Like.post_id == self.id).scalar() or 0
 
     def to_dict(self) -> dict:
         return {
@@ -33,5 +40,6 @@ class Post(db.Model):
             'category': self.category.to_dict() if self.category else None,
             'views': self.views,
             'likes': self.likes,
-            'comment_count': len(self.comments)
+            'likes_count': self.likes_count,
+            'comment_count': self.comment_count
         }
