@@ -106,19 +106,7 @@ export DATABASE_URL="mysql+pymysql://root:your_password@localhost:3306/blog_db?c
 CREATE DATABASE blog_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
-#### 4. 设置密钥（生产环境必改！）
-
-```bash
-# Windows (PowerShell)
-$env:SECRET_KEY="your-strong-secret-key-here"
-$env:JWT_SECRET_KEY="your-strong-jwt-secret-key-here"
-
-# Linux/Mac
-export SECRET_KEY="your-strong-secret-key-here"
-export JWT_SECRET_KEY="your-strong-jwt-secret-key-here"
-```
-
-#### 5. 初始化并运行
+#### 4. 初始化并运行
 
 ```bash
 # 初始化数据库（创建表 + 默认管理员账号 + 默认分类）
@@ -266,21 +254,6 @@ python -m pytest tests/ -v --cov=.
 # 运行特定测试文件
 python -m pytest tests/test_auth.py -v
 ```
-
----
-
-## 🔒 安全注意事项
-
-生产环境部署前，请务必完成以下操作：
-
-- [ ] 修改 `SECRET_KEY` 和 `JWT_SECRET_KEY` 为强随机字符串
-- [ ] 修改 MySQL root 密码
-- [ ] 启用 HTTPS（推荐使用 Nginx + Let's Encrypt）
-- [ ] 配置防火墙，限制数据库端口（3306）仅内网访问
-- [ ] 禁用 `/apidocs` 路由或添加认证（生产环境）
-- [ ] 添加 CSRF 保护（推荐 Flask-WTF）
-- [ ] 配置日志轮转（避免日志文件无限增长）
-- [ ] 定期备份数据库
 
 ---
 
