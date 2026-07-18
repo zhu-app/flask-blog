@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify, redirect, url_for, session, flash
 from flask_jwt_extended import get_jwt_identity
 from sqlalchemy.orm import joinedload
 from utils import login_required_web, login_required_api
-from models import db, Comment, Post
+from models import db, User, Comment, Post
 
 comments_bp = Blueprint('comments', __name__)
 
@@ -81,7 +81,7 @@ def add_comment(post_id):
 def delete_comment(comment_id):
     """删除评论：评论作者、文章作者、管理员均可删除"""
     comment = Comment.query.get_or_404(comment_id)
-    post = Post.query.get(comment.post_id)
+    post = db.session.get(Post, comment.post_id)
 
     user_id = session['user_id']
     is_comment_author = comment.user_id == user_id

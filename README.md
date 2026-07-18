@@ -59,7 +59,7 @@
 | **字体** | Noto Serif SC (标题), JetBrains Mono (代码) |
 | **API 文档** | Swagger UI (flasgger) |
 | **数据库迁移** | Flask-Migrate (Alembic) |
-| **测试** | pytest, pytest-flask (SQLite 内存数据库) |
+| **测试** | pytest, pytest-flask (SQLite 内存数据库, 25个测试用例) |
 
 ---
 
