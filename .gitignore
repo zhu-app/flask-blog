@@ -9,3 +9,5 @@ migrations/
 /dist/
 /build/
 nul
+.claude/
+.pytest_cache/
