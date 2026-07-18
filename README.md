@@ -7,7 +7,6 @@
   <a href="https://python.org"><img src="https://img.shields.io/badge/Python-3.10+-blue?logo=python" alt="Python"></a>
   <a href="https://flask.palletsprojects.com"><img src="https://img.shields.io/badge/Flask-3.0-black?logo=flask" alt="Flask"></a>
   <a href="https://mysql.com"><img src="https://img.shields.io/badge/MySQL-8.0-orange?logo=mysql" alt="MySQL"></a>
-  <a href="https://docker.com"><img src="https://img.shields.io/badge/Docker-ready-2496ED?logo=docker" alt="Docker"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green" alt="License"></a>
 </p>
 
@@ -60,14 +59,13 @@
 | **字体** | Noto Serif SC (标题), JetBrains Mono (代码) |
 | **API 文档** | Swagger UI (flasgger) |
 | **数据库迁移** | Flask-Migrate (Alembic) |
-| **容器化** | Docker, Docker Compose |
 | **测试** | pytest, pytest-flask (SQLite 内存数据库) |
 
 ---
 
 ## 🚀 快速开始
 
-### 方式一：本地运行
+### 本地运行
 
 #### 1. 安装依赖
 
@@ -131,23 +129,6 @@ python app.py
 ```
 
 访问 **http://localhost:5000** 🎉
-
-### 方式二：Docker 部署（推荐）
-
-```bash
-# 1. 配置环境变量
-cp .env.example .env
-# 编辑 .env 中的密钥
-
-# 2. 启动服务
-docker-compose up -d
-
-# 3. 初始化数据库
-docker-compose exec web python init_db.py
-
-# 4. 查看日志
-docker-compose logs -f
-```
 
 ---
 
@@ -236,9 +217,6 @@ ink-and-code/
 ├── init_db.py             # 数据库初始化脚本
 ├── pyproject.toml         # 项目元数据 + 依赖声明
 ├── requirements.txt       # Python 依赖
-├── Dockerfile             # 多阶段构建镜像
-├── docker-compose.yml     # Docker 编排（Web + MySQL）
-├── .env.example           # 环境变量模板
 ├── models/                # 数据模型层
 │   ├── user.py            #   用户模型
 │   ├── post.py            #   文章模型
@@ -287,33 +265,6 @@ python -m pytest tests/ -v --cov=.
 
 # 运行特定测试文件
 python -m pytest tests/test_auth.py -v
-```
-
----
-
-## 🐳 Docker 常用命令
-
-```bash
-# 启动服务
-docker-compose up -d
-
-# 查看日志
-docker-compose logs -f
-
-# 停止服务
-docker-compose down
-
-# 重启服务
-docker-compose restart
-
-# 进入容器
-docker-compose exec web bash
-
-# 查看数据库
-docker-compose exec db mysql -u root -p blog_db
-
-# 重建镜像
-docker-compose build --no-cache
 ```
 
 ---
