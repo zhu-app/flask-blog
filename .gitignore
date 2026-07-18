@@ -1,45 +1,11 @@
-# Python
-__pycache__/
-*.py[cod]
-*.pyo
-*.egg-info/
-dist/
-build/
-*.egg
-
-# Virtual environment
-venv/
 .venv/
-env/
-
-# Environment variables
-.env
-
-# IDE
-.idea/
-.vscode/
-*.swp
-*.swo
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Logs
-*.log
+__pycache__/
+*.pyc
 app.log
-
-# Uploads (user-generated content)
-uploads/*
-
-# Database
-instance/
-
-# PyTest
-.pytest_cache/
-
-# Migration
-migrations/versions/
-
-# Local settings
-.claude/
+uploads/
+migrations/
+.env
+*.egg-info/
+/dist/
+/build/
+nul

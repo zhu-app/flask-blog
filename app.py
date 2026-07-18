@@ -90,7 +90,7 @@ def create_app(config_class=None) -> Flask:
     # Swagger 配置
     Swagger(app, template={
         'info': {
-            'title': '博客系统 API',
+            'title': 'Ink & Code API',
             'description': 'Flask + MySQL 博客系统 RESTful API 文档',
             'version': '1.0.0',
             'contact': {

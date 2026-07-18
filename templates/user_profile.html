@@ -3,21 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ profile_user.username }} - 个人主页</title>
+    <title>{{ profile_user.username }} - 个人主页 - Ink & Code</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
 </head>
 <body>
     <nav class="navbar">
         <div class="container nav-content">
-            <a href="/" class="logo">📝 我的博客</a>
+            <a href="/" class="logo">✍️ Ink & Code</a>
             <div class="nav-links">
                 {% if current_user %}
                     <span>欢迎, {{ current_user.username }}</span>
                     <a href="/write">写文章</a>
+                    <a href="/dashboard">📋 我的面板</a>
+                    {% if current_user.role == 'admin' %}<a href="/admin">👑 管理</a>{% endif %}
                     <a href="/logout">退出</a>
                 {% else %}
-                    <a href="/login">登录</a>
-                    <a href="/register">注册</a>
+                    <a href="/login" class="btn-nav">登录</a>
+                    <a href="/register" class="btn-nav btn-nav-reg">注册</a>
                 {% endif %}
             </div>
         </div>
@@ -68,7 +73,7 @@
 
     <footer class="footer">
         <div class="container">
-            <p>© 2026 我的博客 | Flask + MySQL</p>
+            <p>© 2026 Ink & Code | Flask + MySQL</p>
         </div>
     </footer>
 </body>

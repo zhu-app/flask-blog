@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import func
 from . import db
 
@@ -9,8 +9,8 @@ class Post(db.Model):
     id: int = db.Column(db.Integer, primary_key=True)
     title: str = db.Column(db.String(200), nullable=False, index=True)
     content: str = db.Column(db.Text, nullable=False)
-    created_at: datetime = db.Column(db.DateTime, default=datetime.utcnow, index=True)
-    updated_at: datetime = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at: datetime = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), index=True)
+    updated_at: datetime = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     user_id: int = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
     category_id: int = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=True, index=True)
     views: int = db.Column(db.Integer, default=0)

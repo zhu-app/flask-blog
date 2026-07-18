@@ -11,7 +11,7 @@ def admin_required(f):
     @wraps(f)
     @login_required_web
     def decorated(*args, **kwargs):
-        user = User.query.get(session.get('user_id'))
+        user = db.session.get(User, session.get('user_id'))
         if not user or user.role != 'admin':
             flash('无权限访问', 'error')
             return redirect(url_for('posts.index'))
@@ -134,7 +134,9 @@ def create_category():
 @admin_required
 def delete_category(cat_id):
     cat = Category.query.get_or_404(cat_id)
+    # 先清空该分类下所有文章的 category_id，避免外键约束错误
+    Post.query.filter_by(category_id=cat.id).update({'category_id': None})
     db.session.delete(cat)
     db.session.commit()
-    flash(f'已删除分类: {cat.name}', 'success')
+    flash(f'已删除分类: {cat.name}（关联文章已转为无分类）', 'success')
     return redirect(url_for('admin.categories'))

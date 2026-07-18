@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}管理后台{% endblock %} - 我的博客</title>
+    <title>{% block title %}管理后台{% endblock %} - Ink & Code</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
 </head>
 <body>
     <nav class="navbar">
         <div class="container nav-content">
-            <a href="/" class="logo">📝 我的博客</a>
+            <a href="/" class="logo">✍️ Ink & Code</a>
             <div class="nav-links">
                 <span>欢迎, {{ current_user.username }}</span>
                 <a href="/">返回首页</a>

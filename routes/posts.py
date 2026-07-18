@@ -1,8 +1,7 @@
 import os
 import markdown
-from datetime import datetime
-from flask import Blueprint, request, jsonify, render_template, redirect, url_for, session, flash, current_app, Response
-from feedgen.feed import FeedGenerator
+from datetime import datetime, timezone
+from flask import Blueprint, request, jsonify, render_template, redirect, url_for, session, flash, current_app
 from flask_jwt_extended import get_jwt_identity
 from werkzeug.utils import secure_filename
 from utils import login_required_web, login_required_api
@@ -156,7 +155,7 @@ def api_update_post(post_id):
 
     # 检查所有权：只有作者或管理员可以编辑
     if post.user_id != user_id:
-        user = User.query.get(user_id)
+        user = db.session.get(User, user_id)
         if not user or user.role != 'admin':
             return jsonify({'success': False, 'message': '无权修改他人文章'}), 403
 
@@ -179,7 +178,7 @@ def api_delete_post(post_id):
 
     # 检查所有权：只有作者或管理员可以删除
     if post.user_id != user_id:
-        user = User.query.get(user_id)
+        user = db.session.get(User, user_id)
         if not user or user.role != 'admin':
             return jsonify({'success': False, 'message': '无权删除他人文章'}), 403
 
@@ -253,7 +252,7 @@ def api_upload():
     filename = secure_filename(file.filename)
     # 加时间戳防止重名
     name, ext = os.path.splitext(filename)
-    filename = f"{name}_{int(datetime.utcnow().timestamp())}{ext}"
+    filename = f"{name}_{int(datetime.now(timezone.utc).timestamp())}{ext}"
     file.save(os.path.join(upload_path, filename))
 
     url = f"/{UPLOAD_FOLDER}/{filename}"
@@ -294,7 +293,11 @@ def index():
 
 @posts_bp.route('/post/<int:post_id>')
 def post_detail(post_id):
-    post = Post.query.get_or_404(post_id)
+    post = Post.query.options(
+        joinedload(Post.author),
+        joinedload(Post.category),
+        joinedload(Post.comments).joinedload(Comment.author)
+    ).get_or_404(post_id)
     # 增加阅读量
     post.views += 1
     db.session.commit()
@@ -346,7 +349,7 @@ def edit_post(post_id):
 
     # 检查所有权：只有作者或管理员可以编辑
     if post.user_id != session['user_id']:
-        user = User.query.get(session['user_id'])
+        user = db.session.get(User, session['user_id'])
         if not user or user.role != 'admin':
             flash('无权编辑他人文章', 'error')
             return redirect(url_for('posts.index'))
@@ -362,27 +365,71 @@ def edit_post(post_id):
     return render_template('write_post.html', post=post, editing=True, categories=get_categories())
 
 
-# ========== RSS ==========
+# ========== 个人中心 ==========
 
-@posts_bp.route('/feed')
-def rss_feed():
-    fg = FeedGenerator()
-    fg.title('我的博客')
-    fg.description('Flask + MySQL 博客系统')
-    fg.link(href=request.host_url, rel='alternate')
-    fg.language('zh-CN')
+@posts_bp.route('/dashboard')
+@login_required_web
+def dashboard():
+    """个人中心：查看自己的文章和统计数据"""
+    user = db.session.get(User, session['user_id'])
+    posts = Post.query.options(
+        joinedload(Post.category)
+    ).filter_by(user_id=user.id).order_by(Post.created_at.desc()).all()
 
-    posts = Post.query.order_by(Post.created_at.desc()).limit(20).all()
-    for p in posts:
-        entry = fg.add_entry()
-        entry.id(str(p.id))
-        entry.title(p.title)
-        entry.content(
-            markdown.markdown(p.content, extensions=['fenced_code', 'codehilite']),
-            type='html'
-        )
-        entry.author(name=p.author.username if p.author else '匿名')
-        entry.published(p.created_at)
-        entry.link(href=request.host_url.rstrip('/') + url_for('posts.post_detail', post_id=p.id))
+    stats = {
+        'post_count': len(posts),
+        'total_views': sum(p.views for p in posts),
+        'total_likes': sum(p.likes for p in posts),
+        'total_comments': sum(p.comment_count for p in posts),
+    }
 
-    return Response(fg.rss_str(pretty=True), mimetype='application/rss+xml')
+    categories = Category.query.order_by(Category.name).all()
+
+    return render_template('dashboard.html', user=user, posts=posts, stats=stats, categories=categories)
+
+
+@posts_bp.route('/dashboard/password', methods=['GET', 'POST'])
+@login_required_web
+def change_password():
+    """修改密码"""
+    user = db.session.get(User, session['user_id'])
+
+    if request.method == 'POST':
+        old_pw = request.form.get('old_password', '')
+        new_pw = request.form.get('new_password', '')
+        confirm_pw = request.form.get('confirm_password', '')
+
+        if not user.check_password(old_pw):
+            flash('当前密码错误', 'error')
+        elif len(new_pw) < 6:
+            flash('新密码至少6位', 'error')
+        elif new_pw != confirm_pw:
+            flash('两次密码输入不一致', 'error')
+        else:
+            user.set_password(new_pw)
+            db.session.commit()
+            flash('密码修改成功！', 'success')
+            return redirect(url_for('posts.dashboard'))
+
+    return render_template('change_password.html', user=user)
+
+
+@posts_bp.route('/dashboard/post/<int:post_id>/delete', methods=['POST'])
+@login_required_web
+def dashboard_delete_post(post_id):
+    """从个人中心删除自己的文章"""
+    post = Post.query.get_or_404(post_id)
+
+    # 检查所有权：只有作者或管理员可以删除
+    if post.user_id != session['user_id']:
+        user = db.session.get(User, session['user_id'])
+        if not user or user.role != 'admin':
+            flash('无权删除他人文章', 'error')
+            return redirect(url_for('posts.dashboard'))
+
+    db.session.delete(post)
+    db.session.commit()
+    flash('文章已删除', 'success')
+    return redirect(url_for('posts.dashboard'))
+
+

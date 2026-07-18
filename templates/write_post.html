@@ -3,17 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% if editing %}编辑文章{% else %}写文章{% endif %} - 我的博客</title>
+    <title>{% if editing %}编辑文章{% else %}写文章{% endif %} - Ink & Code</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
 </head>
 <body>
     <nav class="navbar">
         <div class="container nav-content">
-            <a href="/" class="logo">📝 我的博客</a>
+            <a href="/" class="logo">✍️ Ink & Code</a>
             <div class="nav-links">
                 <span>欢迎, {{ current_user.username }}</span>
                 <a href="/">首页</a>
+                <a href="/dashboard">📋 我的面板</a>
+                {% if current_user.role == 'admin' %}<a href="/admin">👑 管理</a>{% endif %}
                 <a href="/logout">退出</a>
             </div>
         </div>
@@ -34,14 +39,22 @@
             <input type="text" name="title" placeholder="文章标题" value="{{ post.title if editing else '' }}" required>
 
             <!-- 分类选择 -->
-            <select name="category_id" class="category-select">
-                <option value="">-- 选择分类（可选）--</option>
-                {% for cat in categories %}
-                <option value="{{ cat.id }}" {% if editing and post.category_id == cat.id %}selected{% endif %}>
-                    {{ cat.name }}
-                </option>
-                {% endfor %}
-            </select>
+            <div class="category-row">
+                <select name="category_id" id="categorySelect" class="category-select">
+                    <option value="">-- 选择分类（可选）--</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.id }}" {% if editing and post.category_id == cat.id %}selected{% endif %}>
+                        {{ cat.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <button type="button" class="btn-sm btn-add-cat" onclick="addCategory()" title="添加分类">＋</button>
+            </div>
+            <div id="addCatForm" class="add-cat-form">
+                <input type="text" id="newCatName" placeholder="新分类名称" maxlength="20">
+                <button type="button" class="add-cat-btn confirm" onclick="submitCategory()">确定</button>
+                <button type="button" class="add-cat-btn cancel" onclick="hideAddCat()">取消</button>
+            </div>
 
             <!-- Markdown 工具栏 -->
             <div class="md-toolbar">
@@ -56,6 +69,31 @@
                 <input type="file" id="imageInput" accept="image/*" style="display:none" onchange="handleImage(this)">
                 <span class="md-toolbar-sep">|</span>
                 <button type="button" onclick="togglePreview()" id="previewBtn">👁 预览</button>
+                <button type="button" onclick="toggleHelp()" title="Markdown 语法帮助" style="font-style:italic">❓</button>
+            </div>
+
+            <!-- Markdown 语法帮助 -->
+            <div id="mdHelp" class="md-help" style="display:none;">
+                <div class="md-help-content">
+                    <div class="md-help-header">
+                        <span>📖 Markdown 语法速查</span>
+                        <button type="button" onclick="toggleHelp()" class="md-help-close">✕</button>
+                    </div>
+                    <div class="md-help-body">
+                        <div class="md-help-item"><code># 标题</code><span>一级标题</span></div>
+                        <div class="md-help-item"><code>## 标题</code><span>二级标题</span></div>
+                        <div class="md-help-item"><code>**加粗**</code><span>加粗文字</span></div>
+                        <div class="md-help-item"><code>*斜体*</code><span>斜体文字</span></div>
+                        <div class="md-help-item"><code>- 列表项</code><span>无序列表</span></div>
+                        <div class="md-help-item"><code>1. 列表项</code><span>有序列表</span></div>
+                        <div class="md-help-item"><code>> 引用</code><span>引用文本</span></div>
+                        <div class="md-help-item"><code>`代码`</code><span>行内代码</span></div>
+                        <div class="md-help-item"><code>```语言</code><span>代码块（支持语法高亮）</span></div>
+                        <div class="md-help-item"><code>[文字](url)</code><span>链接</span></div>
+                        <div class="md-help-item"><code>![描述](url)</code><span>图片</span></div>
+                        <div class="md-help-item"><code>---</code><span>分隔线</span></div>
+                    </div>
+                </div>
             </div>
 
             <!-- 编辑区 + 预览区 -->
@@ -149,11 +187,54 @@
                 if (hljs) hljs.highlightAll();
             }
         });
+
+        // Markdown 帮助面板
+        let helpVisible = false;
+        function toggleHelp() {
+            helpVisible = !helpVisible;
+            document.getElementById('mdHelp').style.display = helpVisible ? 'block' : 'none';
+        }
+
+        // ===== 分类管理 =====
+        function addCategory() {
+            document.getElementById('addCatForm').style.display = 'flex';
+            document.getElementById('newCatName').focus();
+        }
+        function hideAddCat() {
+            document.getElementById('addCatForm').style.display = 'none';
+            document.getElementById('newCatName').value = '';
+        }
+        async function submitCategory() {
+            const name = document.getElementById('newCatName').value.trim();
+            if (!name) { alert('请输入分类名称'); return; }
+            const token = localStorage.getItem('token');
+            if (!token) { alert('请先登录'); return; }
+            try {
+                const res = await fetch('/api/categories', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token},
+                    body: JSON.stringify({name: name})
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const opt = document.createElement('option');
+                    opt.value = data.category.id;
+                    opt.textContent = data.category.name;
+                    opt.selected = true;
+                    document.getElementById('categorySelect').appendChild(opt);
+                    hideAddCat();
+                } else {
+                    alert(data.message);
+                }
+            } catch(e) {
+                alert('添加失败');
+            }
+        }
     </script>
 
     <footer class="footer">
         <div class="container">
-            <p>© 2026 我的博客 | Flask + MySQL</p>
+            <p>© 2026 Ink & Code | Flask + MySQL</p>
         </div>
     </footer>
 </body>

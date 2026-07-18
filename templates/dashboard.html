@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>个人中心 - Ink & Code</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container nav-content">
+            <a href="/" class="logo">✍️ Ink & Code</a>
+            <div class="nav-links">
+                <a href="/">首页</a>
+                <a href="/write">✏️ 写文章</a>
+                <span>欢迎, {{ user.username }}</span>
+                <a href="/logout">退出</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container main-content">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <!-- 页面标题 -->
+        <div class="dash-header">
+            <div class="dash-avatar">👤</div>
+            <div>
+                <h1>{{ user.username }} 的个人中心</h1>
+                <p class="dash-subtitle">
+                    加入于 {{ user.created_at.strftime('%Y-%m-%d') }}
+                    {% if user.role == 'admin' %}<span class="admin-badge">👑 管理员</span>{% endif %}
+                </p>
+            </div>
+        </div>
+
+        <!-- 统计卡片 -->
+        <div class="stat-cards">
+            <div class="stat-card">
+                <div class="stat-number">{{ stats.post_count }}</div>
+                <div class="stat-label">📝 文章</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ stats.total_views }}</div>
+                <div class="stat-label">👁️ 阅读</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ stats.total_likes }}</div>
+                <div class="stat-label">❤️ 点赞</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ stats.total_comments }}</div>
+                <div class="stat-label">💬 评论</div>
+            </div>
+        </div>
+
+        <!-- 快捷操作 -->
+        <div class="dash-actions">
+            <a href="/write" class="btn btn-primary">✏️ 写新文章</a>
+            <a href="/dashboard/password" class="btn btn-outline">🔑 修改密码</a>
+            {% if user.role == 'admin' %}
+            <a href="/admin" class="btn btn-outline">👑 管理后台</a>
+            {% endif %}
+        </div>
+
+        <!-- 文章列表 -->
+        <div class="dash-section">
+            <h2>📝 我的文章</h2>
+
+            {% if posts %}
+            <div class="dash-table-wrap">
+            <table class="dash-table">
+                <thead>
+                    <tr>
+                        <th>标题</th>
+                        <th>分类</th>
+                        <th class="col-center">👁️</th>
+                        <th class="col-center">❤️</th>
+                        <th class="col-center">💬</th>
+                        <th>时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for post in posts %}
+                    <tr>
+                        <td class="col-title">
+                            <a href="/post/{{ post.id }}">{{ post.title[:50] }}{% if post.title|length > 50 %}...{% endif %}</a>
+                        </td>
+                        <td>{{ post.category.name if post.category else '-' }}</td>
+                        <td class="col-center">{{ post.views }}</td>
+                        <td class="col-center">{{ post.likes }}</td>
+                        <td class="col-center">{{ post.comment_count }}</td>
+                        <td class="col-date">{{ post.created_at.strftime('%Y-%m-%d') }}</td>
+                        <td class="col-actions">
+                            <div class="action-group">
+                                <a href="/edit/{{ post.id }}" class="btn-sm btn-primary">编辑</a>
+                                <form method="POST" action="/dashboard/post/{{ post.id }}/delete"
+                                      onsubmit="return confirm('确认删除「{{ post.title }}」？')">
+                                    <button class="btn-sm btn-danger">删除</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <p>还没有写过文章，快去写第一篇吧！</p>
+                <a href="/write" class="btn btn-primary">✏️ 写文章</a>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- 分类管理 -->
+        <div class="dash-section">
+            <h2>🏷️ 全部分类</h2>
+            <div class="category-list">
+                {% for cat in categories %}
+                <div class="category-tag">
+                    <span class="cat-name">{{ cat.name }}</span>
+                    <span class="cat-count">{{ cat.posts|length }} 篇文章</span>
+                    {% if user.role == 'admin' %}
+                    <form method="POST" action="/admin/categories/{{ cat.id }}/delete" style="display:inline"
+                          onsubmit="return confirm('删除分类「{{ cat.name }}」？文章不会丢失，但会变为无分类。')">
+                        <button class="cat-del-btn" title="删除分类">✕</button>
+                    </form>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>© 2026 Ink & Code | Flask + MySQL</p>
+        </div>
+    </footer>
+</body>
+</html>

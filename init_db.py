@@ -23,4 +23,13 @@ with app.app_context():
         admin_user.role = 'admin'
         db.session.add(admin_user)
         print("[OK] 已将 admin 账号升级为管理员")
+
+    # 初始化默认分类
+    from models import Category
+    default_categories = ['技术', '生活', '学习', '分享', '其他']
+    for cat_name in default_categories:
+        if not Category.query.filter_by(name=cat_name).first():
+            db.session.add(Category(name=cat_name))
+            print(f"[OK] 已创建分类: {cat_name}")
+
     db.session.commit()

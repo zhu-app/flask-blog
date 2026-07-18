@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify, redirect, url_for, session, flash
 from flask_jwt_extended import get_jwt_identity
 from sqlalchemy.orm import joinedload
 from utils import login_required_web, login_required_api
-from models import db, Comment
+from models import db, Comment, Post
 
 comments_bp = Blueprint('comments', __name__)
 
@@ -74,3 +74,26 @@ def add_comment(post_id):
 
     flash('评论成功！', 'success')
     return redirect(url_for('posts.post_detail', post_id=post_id))
+
+
+@comments_bp.route('/comment/<int:comment_id>/delete', methods=['POST'])
+@login_required_web
+def delete_comment(comment_id):
+    """删除评论：评论作者、文章作者、管理员均可删除"""
+    comment = Comment.query.get_or_404(comment_id)
+    post = Post.query.get(comment.post_id)
+
+    user_id = session['user_id']
+    is_comment_author = comment.user_id == user_id
+    is_post_author = post and post.user_id == user_id
+    user = db.session.get(User, user_id)
+    is_admin = user and user.role == 'admin'
+
+    if not (is_comment_author or is_post_author or is_admin):
+        flash('无权删除此评论', 'error')
+        return redirect(url_for('posts.post_detail', post_id=comment.post_id))
+
+    db.session.delete(comment)
+    db.session.commit()
+    flash('评论已删除', 'success')
+    return redirect(url_for('posts.post_detail', post_id=comment.post_id))

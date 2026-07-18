@@ -160,7 +160,7 @@ def login_page():
 @auth_bp.route('/logout')
 def logout():
     session.clear()
-    return redirect(url_for('index'))
+    return redirect(url_for('posts.index'))
 
 
 @auth_bp.route('/user/<username>')

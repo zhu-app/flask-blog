@@ -1,6 +1,6 @@
 [build-system]
 requires = ["setuptools>=64"]
-build-backend = "setuptools.backends._legacy:_Backend"
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "flask-blog"
@@ -31,6 +31,7 @@ dependencies = [
     "feedgen>=1.0.0",
     "Flask-Migrate>=4.0.5",
     "flasgger>=0.9.7.1",
+    "requests>=2.34.2",
 ]
 
 [project.optional-dependencies]
@@ -41,3 +42,9 @@ dev = [
 
 [tool.setuptools.packages.find]
 include = ["models*", "routes*", "utils*"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "pytest-flask>=1.3.0",
+]

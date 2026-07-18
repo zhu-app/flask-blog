@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy import func
 from . import db
@@ -11,7 +11,7 @@ class User(db.Model):
     username: str = db.Column(db.String(80), unique=True, nullable=False, index=True)
     email: str = db.Column(db.String(120), unique=True, nullable=False, index=True)
     password_hash: str = db.Column(db.String(256), nullable=False)
-    created_at: datetime = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    created_at: datetime = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), index=True)
     role: str = db.Column(db.String(20), default='user', index=True)
 
     posts = db.relationship('Post', backref='author', lazy=True, cascade='all, delete-orphan')
@@ -40,5 +40,5 @@ class User(db.Model):
             'email': self.email,
             'role': self.role,
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S'),
-            'post_count': len(self.posts)
+            'post_count': self.post_count
         }

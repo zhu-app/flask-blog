@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from . import db
 
 
@@ -7,7 +7,7 @@ class Comment(db.Model):
 
     id: int = db.Column(db.Integer, primary_key=True)
     content: str = db.Column(db.Text, nullable=False)
-    created_at: datetime = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    created_at: datetime = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), index=True)
     post_id: int = db.Column(db.Integer, db.ForeignKey('posts.id'), nullable=False, index=True)
     user_id: int = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
 
