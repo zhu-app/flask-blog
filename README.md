@@ -126,7 +126,7 @@ python app.py
 |------|--------|------|
 | 👑 管理员 | `admin` | `123456` |
 
-> ⚠️ 生产环境请立即修改密码和密钥！
+> ⚠️ 首次使用建议修改默认密码！
 
 ---
 
@@ -254,12 +254,6 @@ python -m pytest tests/ -v --cov=.
 # 运行特定测试文件
 python -m pytest tests/test_auth.py -v
 ```
-
----
-
-## 📄 许可证
-
-[MIT License](LICENSE)
 
 ---
 
