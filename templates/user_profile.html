@@ -39,7 +39,7 @@
         {% endwith %}
 
         <div class="profile-header">
-            <div class="profile-avatar">👤</div>
+            <div class="profile-avatar">{% if profile_user.avatar_url %}<img src="{{ profile_user.avatar_url }}" alt="{{ profile_user.username }}">{% else %}👤{% endif %}</div>
             <h1>{{ profile_user.username }}</h1>
             <div class="profile-meta">
                 <span>📅 加入于 {{ profile_user.created_at.strftime('%Y-%m-%d') }}</span>

@@ -4,6 +4,7 @@ from utils import login_required_web
 from models import db, User, Post, Comment, Category
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
+ADMIN_PER_PAGE = 20
 
 
 def admin_required(f):
@@ -43,22 +44,29 @@ def dashboard():
 @admin_bp.route('/users')
 @admin_required
 def users():
-    all_users = User.query.order_by(User.created_at.desc()).all()
-    return render_template('admin/users.html', users=all_users)
+    page = request.args.get('page', 1, type=int)
+    pagination = User.query.order_by(User.created_at.desc()).paginate(page=page, per_page=ADMIN_PER_PAGE, error_out=False)
+    return render_template('admin/users.html', users=pagination.items, pagination=pagination)
 
 
 @admin_bp.route('/posts')
 @admin_required
 def posts():
-    all_posts = Post.query.order_by(Post.created_at.desc()).all()
-    return render_template('admin/posts.html', posts=all_posts)
+    page = request.args.get('page', 1, type=int)
+    pagination = Post.query.order_by(Post.created_at.desc()).paginate(page=page, per_page=ADMIN_PER_PAGE, error_out=False)
+    return render_template('admin/posts.html', posts=pagination.items, pagination=pagination)
 
 
 @admin_bp.route('/comments')
 @admin_required
 def comments():
-    all_comments = Comment.query.order_by(Comment.created_at.desc()).all()
-    return render_template('admin/comments.html', comments=all_comments)
+    page = request.args.get('page', 1, type=int)
+    status = request.args.get('status', '').strip()
+    query = Comment.query
+    if status in {'pending', 'approved', 'hidden'}:
+        query = query.filter_by(status=status)
+    pagination = query.order_by(Comment.created_at.desc()).paginate(page=page, per_page=ADMIN_PER_PAGE, error_out=False)
+    return render_template('admin/comments.html', comments=pagination.items, pagination=pagination, status=status)
 
 
 @admin_bp.route('/categories')
@@ -72,7 +80,7 @@ def categories():
 @admin_bp.route('/users/<int:user_id>/toggle-admin', methods=['POST'])
 @admin_required
 def toggle_admin(user_id):
-    user = User.query.get_or_404(user_id)
+    user = db.get_or_404(User, user_id)
     if user.id == session['user_id']:
         flash('不能取消自己的管理员权限', 'error')
     else:
@@ -85,7 +93,7 @@ def toggle_admin(user_id):
 @admin_bp.route('/users/<int:user_id>/delete', methods=['POST'])
 @admin_required
 def delete_user(user_id):
-    user = User.query.get_or_404(user_id)
+    user = db.get_or_404(User, user_id)
     if user.id == session['user_id']:
         flash('不能删除自己', 'error')
     else:
@@ -98,7 +106,7 @@ def delete_user(user_id):
 @admin_bp.route('/posts/<int:post_id>/delete', methods=['POST'])
 @admin_required
 def delete_post(post_id):
-    post = Post.query.get_or_404(post_id)
+    post = db.get_or_404(Post, post_id)
     db.session.delete(post)
     db.session.commit()
     flash('文章已删除', 'success')
@@ -108,10 +116,24 @@ def delete_post(post_id):
 @admin_bp.route('/comments/<int:comment_id>/delete', methods=['POST'])
 @admin_required
 def delete_comment(comment_id):
-    comment = Comment.query.get_or_404(comment_id)
+    comment = db.get_or_404(Comment, comment_id)
     db.session.delete(comment)
     db.session.commit()
     flash('评论已删除', 'success')
+    return redirect(url_for('admin.comments'))
+
+
+@admin_bp.route('/comments/<int:comment_id>/status', methods=['POST'])
+@admin_required
+def update_comment_status(comment_id):
+    comment = db.get_or_404(Comment, comment_id)
+    status = request.form.get('status')
+    if status not in {'pending', 'approved', 'hidden'}:
+        flash('无效的评论状态', 'error')
+    else:
+        comment.status = status
+        db.session.commit()
+        flash('评论状态已更新', 'success')
     return redirect(url_for('admin.comments'))
 
 
@@ -133,7 +155,7 @@ def create_category():
 @admin_bp.route('/categories/<int:cat_id>/delete', methods=['POST'])
 @admin_required
 def delete_category(cat_id):
-    cat = Category.query.get_or_404(cat_id)
+    cat = db.get_or_404(Category, cat_id)
     # 先清空该分类下所有文章的 category_id，避免外键约束错误
     Post.query.filter_by(category_id=cat.id).update({'category_id': None})
     db.session.delete(cat)

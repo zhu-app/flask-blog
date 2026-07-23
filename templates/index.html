@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ink & Code</title>
+    <title>{% if keyword %}搜索 {{ keyword }} - {% endif %}Ink & Code</title>
+    <meta name="description" content="Ink & Code 个人博客，记录技术、学习与生活文章。">
+    <link rel="alternate" type="application/rss+xml" title="Ink & Code RSS" href="{{ url_for('posts.rss_feed', _external=True) }}">
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -16,7 +18,7 @@
         <div class="container nav-content">
             <a href="/" class="logo">✍️ Ink & Code</a>
             <div class="nav-links">
-                {% if current_user %}
+                    {% if current_user %}
                     <span>欢迎, {{ current_user.username }}</span>
                     <a href="/write">写文章</a>
                     <a href="/dashboard">📋 我的面板</a>
@@ -26,6 +28,7 @@
                     <a href="/login" class="btn-nav">登录</a>
                     <a href="/register" class="btn-nav btn-nav-reg">注册</a>
                 {% endif %}
+                <a href="/rss.xml">RSS</a>
             </div>
         </div>
     </nav>
@@ -53,6 +56,12 @@
                     </option>
                     {% endfor %}
                 </select>
+                <select name="tag" onchange="this.form.submit()">
+                    <option value="">全部标签</option>
+                    {% for item in tags %}
+                    <option value="{{ item.name }}" {% if tag == item.name %}selected{% endif %}>#{{ item.name }}</option>
+                    {% endfor %}
+                </select>
                 <button type="submit">搜索</button>
             </form>
         </div>
@@ -61,6 +70,9 @@
         <div class="posts-list">
             {% for post in posts %}
             <div class="post-card">
+                {% if post.cover_image %}
+                <a href="/post/{{ post.id }}"><img src="{{ post.cover_image }}" alt="{{ post.title }}" class="post-cover"></a>
+                {% endif %}
                 <h2><a href="/post/{{ post.id }}">{{ post.title }}</a></h2>
                 <div class="post-meta">
                     <span>✍️ <a href="/user/{{ post.author.username }}">{{ post.author.username }}</a></span>
@@ -72,12 +84,19 @@
                     <span>❤️ {{ post.likes }}</span>
                     <span>💬 {{ post.comment_count }}</span>
                 </div>
+                {% if post.tags %}
+                <div class="tag-row">
+                    {% for item in post.tags %}
+                    <a href="/?tag={{ item.name }}" class="tag-chip">#{{ item.name }}</a>
+                    {% endfor %}
+                </div>
+                {% endif %}
                 <p class="post-preview">{{ post.content[:200] }}{% if post.content|length > 200 %}...{% endif %}</p>
                 <a href="/post/{{ post.id }}" class="read-more">阅读全文 →</a>
             </div>
             {% else %}
             <div class="empty-state">
-                <p>暂无文章，{{ "快去" if current_user else "先" }}写一篇吧！</p>
+                <p>{% if keyword or category_id or tag %}没有匹配的文章，换个条件试试。{% else %}暂无文章，{{ "快去" if current_user else "先" }}写一篇吧！{% endif %}</p>
             </div>
             {% endfor %}
         </div>

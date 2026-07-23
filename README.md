@@ -1,262 +1,240 @@
-<p align="center">
-  <h1 align="center">✍️ Ink & Code</h1>
-  <p align="center">全栈博客系统 — 当书写遇见代码</p>
-</p>
+# Ink & Code
 
-<p align="center">
-  <a href="https://python.org"><img src="https://img.shields.io/badge/Python-3.10+-blue?logo=python" alt="Python"></a>
-  <a href="https://flask.palletsprojects.com"><img src="https://img.shields.io/badge/Flask-3.0-black?logo=flask" alt="Flask"></a>
-  <a href="https://mysql.com"><img src="https://img.shields.io/badge/MySQL-8.0-orange?logo=mysql" alt="MySQL"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-green" alt="License"></a>
-</p>
+一个基于 Flask + MySQL 的个人博客系统，覆盖写作、分类、标签、评论、点赞、后台管理、RSS、SEO 和基础安全防护。适合作为个人作品集、课程项目或 Flask 全栈实践项目。
 
----
+![Python](https://img.shields.io/badge/Python-3.10+-blue?logo=python)
+![Flask](https://img.shields.io/badge/Flask-3.0-black?logo=flask)
+![MySQL](https://img.shields.io/badge/MySQL-8.0-orange?logo=mysql)
+![Tests](https://img.shields.io/badge/tests-35%20passed-brightgreen)
 
-## ✨ 功能特性
+## 功能亮点
 
-### 👤 用户端
+### 用户端
+
 | 功能 | 说明 |
-|------|------|
-| 📝 文章发布/编辑/删除 | 支持 Markdown 写作，实时预览，语法帮助 |
-| 🔍 文章搜索 + 分类筛选 | 按关键词和分类快速定位 |
-| 💬 评论系统 | 登录后可评论，作者可删除评论 |
-| ❤️ 点赞功能 | 支持点赞/取消点赞 |
-| 🖼️ 图片上传 | 支持在文章中插入图片 |
-| 👤 个人主页 | 查看作者所有文章 |
-| 🔐 双认证体系 | 网页用 Session，API 用 JWT Token |
-| 🔑 密码修改 | 个人中心支持修改密码 |
+| --- | --- |
+| 用户认证 | 注册、登录、退出、修改密码、找回密码 |
+| 文章写作 | Markdown 写作、实时预览、发布、编辑、删除 |
+| 草稿箱 | 支持保存草稿，草稿不会公开展示 |
+| 分类与标签 | 支持分类筛选、标签筛选和文章标签管理 |
+| 文章封面 | 支持文章封面图片 URL |
+| SEO 摘要 | 支持自定义文章摘要，未填写时自动生成 |
+| 评论系统 | 登录用户可评论，支持评论审核状态 |
+| 点赞系统 | 支持点赞与取消点赞 |
+| 图片上传 | 支持常见图片格式上传，并限制 SVG 和文件大小 |
+| 个人中心 | 查看自己的文章、草稿、统计数据，设置头像 |
+| 用户主页 | 展示作者公开文章 |
+| RSS | 提供 `/rss.xml` 订阅源 |
 
-### 🔧 管理后台
+### 管理后台
+
 | 功能 | 说明 |
-|------|------|
-| 📊 数据概览 | 用户数、文章数、评论数统计 |
-| 👥 用户管理 | 查看用户、切换管理员、删除用户 |
-| 📰 文章管理 | 查看、删除所有文章 |
-| 💬 评论管理 | 查看、删除评论 |
-| 🏷️ 分类管理 | 创建、删除分类 |
+| --- | --- |
+| 数据概览 | 用户数、文章数、评论数、分类数 |
+| 用户管理 | 查看用户、切换管理员、删除用户 |
+| 文章管理 | 查看文章、区分草稿/已发布、删除文章 |
+| 评论管理 | 查看评论、按状态筛选、通过/隐藏/删除评论 |
+| 分类管理 | 创建、删除分类 |
+| 后台分页 | 用户、文章、评论列表支持分页 |
 
-### 🛡️ 安全特性
-- ✅ 密码 bcrypt 加密存储（Werkzeug）
-- ✅ JWT Token 认证（API 接口）
-- ✅ Session 认证（网页端）
-- ✅ 邮箱格式校验
-- ✅ 文章所有权校验（仅作者或管理员可编辑/删除）
-- ✅ 评论所有权校验（评论作者、文章作者、管理员可删除）
-- ✅ 防止 Session Fixation（登录时重置 session）
-- ✅ 文件上传安全过滤（白名单扩展名 + 重命名）
-- ✅ 统一的错误处理（JSON + HTML 双模式）
+### 安全与工程质量
 
----
+- 密码使用 Werkzeug 哈希存储
+- API 使用 JWT，网页端使用 Session
+- 登录后清理旧 Session，降低 Session Fixation 风险
+- 网页表单带 CSRF 校验
+- Markdown 渲染后使用 `bleach` 清洗，降低 XSS 风险
+- 上传文件限制扩展名、MIME 类型和大小
+- 登录失败限流
+- 数据库结构使用 Flask-Migrate / Alembic 管理
+- 自动测试覆盖主要流程，目前 `35 passed`
 
-## 🛠️ 技术栈
+## 技术栈
 
 | 层级 | 技术 |
-|------|------|
-| **后端** | Python 3.10+, Flask 3.0, Flask-JWT-Extended |
-| **数据库** | MySQL 8.0+, SQLAlchemy ORM 2.0 |
-| **前端** | HTML5, CSS3 (自定义设计系统), JavaScript (Fetch API), Jinja2 |
-| **Markdown** | Python-Markdown (代码高亮 + 表格), Highlight.js, Marked.js |
-| **字体** | Noto Serif SC (标题), JetBrains Mono (代码) |
-| **API 文档** | Swagger UI (flasgger) |
-| **数据库迁移** | Flask-Migrate (Alembic) |
-| **测试** | pytest, pytest-flask (SQLite 内存数据库, 25个测试用例) |
+| --- | --- |
+| 后端 | Flask 3.0, Flask-SQLAlchemy, Flask-JWT-Extended |
+| 数据库 | MySQL 8.0, SQLAlchemy ORM |
+| 迁移 | Flask-Migrate, Alembic |
+| 前端 | HTML, CSS, JavaScript, Jinja2 |
+| Markdown | Python-Markdown, Marked.js, Highlight.js |
+| 安全 | bleach, CSRF token, 登录限流 |
+| 测试 | pytest, Flask test client, SQLite 内存库 |
 
----
+## 快速开始
 
-## 🚀 快速开始
+### 1. 安装依赖
 
-### 本地运行
-
-#### 1. 安装依赖
-
-推荐使用 `uv`（快速，项目自带 `uv.lock`）：
-
-```bash
-# 安装 uv（如果没有）
-pip install uv
-
-# 安装项目依赖
-uv sync
-```
-
-或者使用 `pip`：
+推荐使用普通 `pip`：
 
 ```bash
 pip install -r requirements.txt
-
-# 开发依赖（可选）
 pip install pytest pytest-flask
 ```
 
-#### 2. 配置数据库
-
-修改 `config.py` 中的数据库连接，或通过环境变量覆盖：
+如果你使用 `uv`，项目也保留了 `uv.lock`：
 
 ```bash
-# Windows (PowerShell)
-$env:DATABASE_URL="mysql+pymysql://root:your_password@localhost:3306/blog_db?charset=utf8mb4"
-
-# Linux/Mac
-export DATABASE_URL="mysql+pymysql://root:your_password@localhost:3306/blog_db?charset=utf8mb4"
+uv sync
 ```
 
-#### 3. 创建数据库
+### 2. 配置环境变量
+
+Windows PowerShell 示例：
+
+```powershell
+$env:DATABASE_URL="mysql+pymysql://root:your_password@localhost:3306/blog_db?charset=utf8mb4"
+$env:SECRET_KEY="change-this-secret-key"
+$env:JWT_SECRET_KEY="change-this-jwt-secret-key"
+```
+
+Linux / macOS 示例：
+
+```bash
+export DATABASE_URL="mysql+pymysql://root:your_password@localhost:3306/blog_db?charset=utf8mb4"
+export SECRET_KEY="change-this-secret-key"
+export JWT_SECRET_KEY="change-this-jwt-secret-key"
+```
+
+可选配置：
+
+```bash
+# 默认 5MB
+MAX_CONTENT_LENGTH=5242880
+
+# 是否开启评论审核，true 时新评论进入 pending 状态
+COMMENT_REQUIRE_APPROVAL=false
+```
+
+### 3. 创建数据库
 
 ```sql
 CREATE DATABASE blog_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 ```
 
-#### 4. 初始化并运行
+### 4. 执行迁移并初始化数据
 
 ```bash
-# 初始化数据库（创建表 + 默认管理员账号 + 默认分类）
+flask --app app:create_app db upgrade
 python init_db.py
+```
 
-# 启动服务
+默认管理员账号：
+
+| 用户名 | 密码 |
+| --- | --- |
+| `admin` | `123456` |
+
+首次进入后建议立即修改默认密码。
+
+### 5. 启动项目
+
+```bash
 python app.py
 ```
 
-访问 **http://localhost:5000** 🎉
+访问：
 
----
+- 首页：http://localhost:5000
+- 个人中心：http://localhost:5000/dashboard
+- 管理后台：http://localhost:5000/admin
+- API 文档：http://localhost:5000/apidocs
+- RSS：http://localhost:5000/rss.xml
 
-## 🔑 默认账号
-
-| 角色 | 用户名 | 密码 |
-|------|--------|------|
-| 👑 管理员 | `admin` | `123456` |
-
-> ⚠️ 首次使用建议修改默认密码！
-
----
-
-## 📖 使用指南
-
-### 访问地址
-- **博客首页**: http://localhost:5000
-- **个人中心**: http://localhost:5000/dashboard
-- **管理员后台**: http://localhost:5000/admin
-- **API 文档**: http://localhost:5000/apidocs
-
-### 写文章
-1. 注册/登录账号
-2. 点击导航栏「写文章」
-3. 使用 Markdown 编写内容，❓ 按钮可查看语法帮助
-4. 选择分类，点击发布
-
-### 管理后台
-1. 使用管理员账号登录（admin / 123456）
-2. 访问 http://localhost:5000/admin
-3. 管理用户、文章、评论、分类
-
----
-
-## 🎨 设计系统
-
-Ink & Code 使用 CSS 自定义属性构建的专属设计系统：
-
-| Token | 值 | 用途 |
-|-------|-----|------|
-| `--primary` | `#4F46E5` | 靛蓝 — 按钮、链接、强调色 |
-| `--accent` | `#F59E0B` | 琥珀 — 暖色点缀 |
-| `--bg` | `#F8FAFC` | 浅灰 — 页面背景 |
-| `--text` | `#1E293B` | 深灰 — 正文颜色 |
-| `--font-ui` | `-apple-system, ...` | UI 字体 |
-| `--font-display` | `'Noto Serif SC', serif` | 标题字体 |
-| `--font-mono` | `'JetBrains Mono', monospace` | 等宽字体（代码） |
-
----
-
-## 🔌 API 接口
+## API 概览
 
 ### 认证
+
 | 方法 | 路径 | 说明 | 认证 |
-|------|------|------|------|
-| POST | `/api/register` | 用户注册 | - |
-| POST | `/api/login` | 用户登录（返回 JWT Token） | - |
+| --- | --- | --- | --- |
+| POST | `/api/register` | 用户注册 | 无 |
+| POST | `/api/login` | 用户登录，返回 JWT | 无 |
 
 ### 文章
+
 | 方法 | 路径 | 说明 | 认证 |
-|------|------|------|------|
-| GET | `/api/posts` | 文章列表（分页/搜索/分类） | - |
-| GET | `/api/posts/<id>` | 文章详情 | - |
-| POST | `/api/posts` | 创建文章 | ✅ JWT |
-| PUT | `/api/posts/<id>` | 更新文章（仅作者/管理员） | ✅ JWT |
-| DELETE | `/api/posts/<id>` | 删除文章（仅作者/管理员） | ✅ JWT |
-| POST | `/api/posts/<id>/like` | 点赞/取消点赞 | ✅ JWT |
+| --- | --- | --- | --- |
+| GET | `/api/posts` | 文章列表，支持分页、搜索、分类、标签 | 无 |
+| GET | `/api/posts/<id>` | 文章详情 | 无 |
+| POST | `/api/posts` | 创建文章，可设置草稿/发布状态 | JWT |
+| PUT | `/api/posts/<id>` | 更新文章 | JWT |
+| DELETE | `/api/posts/<id>` | 删除文章 | JWT |
+| POST | `/api/posts/<id>/like` | 点赞/取消点赞 | JWT |
+| POST | `/api/upload` | 上传图片 | JWT |
 
-### 评论 & 分类
+### 评论与分类
+
 | 方法 | 路径 | 说明 | 认证 |
-|------|------|------|------|
-| GET | `/api/posts/<id>/comments` | 获取评论列表 | - |
-| POST | `/api/posts/<id>/comments` | 发表评论 | ✅ JWT |
-| GET | `/api/categories` | 获取所有分类 | - |
-| POST | `/api/categories` | 创建分类 | ✅ JWT |
-| POST | `/api/upload` | 上传图片 | ✅ JWT |
+| --- | --- | --- | --- |
+| GET | `/api/posts/<id>/comments` | 获取已通过评论 | 无 |
+| POST | `/api/posts/<id>/comments` | 发表评论 | JWT |
+| GET | `/api/categories` | 获取分类列表 | 无 |
+| POST | `/api/categories` | 创建分类 | JWT |
 
----
+## 项目结构
 
-## 📁 项目结构
-
-```
-ink-and-code/
-├── app.py                 # 应用工厂 + 错误处理
-├── config.py              # 配置（环境变量 + 默认值）
-├── init_db.py             # 数据库初始化脚本
-├── pyproject.toml         # 项目元数据 + 依赖声明
-├── requirements.txt       # Python 依赖
-├── models/                # 数据模型层
-│   ├── user.py            #   用户模型
-│   ├── post.py            #   文章模型
-│   ├── comment.py         #   评论模型
-│   ├── category.py        #   分类模型
-│   └── like.py            #   点赞模型
-├── routes/                # 路由层（蓝图）
-│   ├── auth.py            #   认证（注册/登录/登出）
-│   ├── posts.py           #   文章（CRUD/搜索/点赞/个人中心）
-│   ├── comments.py        #   评论
-│   └── admin.py           #   管理员后台
-├── utils/                 # 工具函数
-│   └── __init__.py        #   权限装饰器
-├── templates/             # Jinja2 模板
-│   ├── index.html         #   首页
-│   ├── post_detail.html   #   文章详情
-│   ├── write_post.html    #   写文章/编辑（含Markdown帮助）
-│   ├── login.html         #   登录
-│   ├── register.html      #   注册
-│   ├── dashboard.html     #   个人中心
-│   ├── change_password.html # 修改密码
-│   ├── user_profile.html  #   用户主页
-│   ├── 404.html           #   404 页面
-│   ├── 500.html           #   500 页面
-│   └── admin/             #   管理后台模板
-├── static/                # 静态资源
-│   └── css/style.css      #   自定义设计系统
-└── tests/                 # 测试
-    ├── conftest.py        #   Fixtures
-    ├── test_auth.py       #   认证测试
-    ├── test_posts.py      #   文章测试
-    ├── test_comments.py   #   评论测试
-    └── test_likes.py      #   点赞测试
+```text
+flask-blog/
+├── app.py                     # 应用工厂、扩展初始化、错误处理、CSRF
+├── config.py                  # 环境变量配置
+├── init_db.py                 # 默认管理员和分类初始化
+├── requirements.txt           # Python 依赖
+├── migrations/                # Alembic 数据库迁移
+│   └── versions/
+│       └── 0001_initial_blog_schema.py
+├── models/                    # 数据模型
+│   ├── user.py
+│   ├── post.py
+│   ├── tag.py
+│   ├── comment.py
+│   ├── category.py
+│   └── like.py
+├── routes/                    # Flask 蓝图
+│   ├── auth.py
+│   ├── posts.py
+│   ├── comments.py
+│   └── admin.py
+├── templates/                 # Jinja2 页面模板
+│   ├── index.html
+│   ├── post_detail.html
+│   ├── write_post.html
+│   ├── dashboard.html
+│   ├── forgot_password.html
+│   ├── reset_password.html
+│   └── admin/
+├── static/                    # CSS 和静态资源
+└── tests/                     # 自动测试
 ```
 
----
+## 测试
 
-## 🧪 测试
+运行全部测试：
 
 ```bash
-# 运行全部测试
-python -m pytest tests/ -v
-
-# 运行测试 + 覆盖率
-python -m pytest tests/ -v --cov=.
-
-# 运行特定测试文件
-python -m pytest tests/test_auth.py -v
+python -m pytest -q
 ```
 
----
+当前测试覆盖：
 
-<p align="center">
-  <sub>Built with ❤️ using Flask & MySQL</sub>
-</p>
+- 注册、登录、找回密码
+- 文章 CRUD、搜索、分页
+- 草稿不公开
+- 标签筛选
+- Markdown 安全清洗
+- 图片上传限制
+- 评论创建与审核可见性
+- 点赞/取消点赞
+- RSS feed
+- CSRF 拦截
+
+当前结果：
+
+```text
+35 passed
+```
+
+## 说明
+
+找回密码功能目前是本地开发版：系统会生成一次性重置链接并显示在页面上。若用于真实线上环境，应接入邮件服务发送重置链接。
+
+本项目聚焦个人项目完整度和核心功能，不包含 Docker、CI/CD、线上监控、备份等部署工程化内容。

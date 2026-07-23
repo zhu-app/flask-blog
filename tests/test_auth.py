@@ -85,3 +85,38 @@ class TestAuth:
             'password': '123456'
         })
         assert resp.status_code == 401
+
+    def test_password_reset_flow(self, client, db):
+        """找回密码可以生成 token 并重置密码"""
+        from models import User
+
+        client.post('/api/register', json={
+            'username': 'resetuser',
+            'email': 'reset@example.com',
+            'password': '123456'
+        })
+        with client.session_transaction() as sess:
+            sess['_csrf_token'] = 'test-csrf'
+
+        resp = client.post('/forgot-password', data={
+            '_csrf_token': 'test-csrf',
+            'email': 'reset@example.com'
+        })
+        assert resp.status_code == 200
+
+        user = User.query.filter_by(email='reset@example.com').first()
+        token = user.reset_token
+        assert token
+
+        resp = client.post(f'/reset-password/{token}', data={
+            '_csrf_token': 'test-csrf',
+            'password': 'newpass123',
+            'confirm_password': 'newpass123'
+        }, follow_redirects=False)
+        assert resp.status_code == 302
+
+        login = client.post('/api/login', json={
+            'username': 'resetuser',
+            'password': 'newpass123'
+        })
+        assert login.status_code == 200

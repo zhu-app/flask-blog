@@ -3,7 +3,7 @@ __pycache__/
 *.pyc
 app.log
 uploads/
-migrations/
+instance/
 .env
 *.egg-info/
 /dist/

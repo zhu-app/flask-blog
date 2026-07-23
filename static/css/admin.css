@@ -181,6 +181,41 @@
     color: #2c3e50;
 }
 
+.admin-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: #f4f6f8;
+    color: #5d6d7e;
+    font-size: 0.8em;
+    font-weight: 600;
+}
+
+.status-badge.published,
+.status-badge.approved {
+    background: #eafaf1;
+    color: #1e8449;
+}
+
+.status-badge.draft,
+.status-badge.pending {
+    background: #fff4d6;
+    color: #9a6400;
+}
+
+.status-badge.hidden {
+    background: #fdecea;
+    color: #c0392b;
+}
+
 .admin-two-col {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));

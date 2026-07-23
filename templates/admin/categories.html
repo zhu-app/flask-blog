@@ -5,6 +5,7 @@
 
 <div class="admin-card" style="margin-bottom:20px">
     <form method="POST" action="/admin/categories/create" class="inline-form">
+        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
         <input type="text" name="name" placeholder="新分类名称" required>
         <button type="submit" class="btn-primary" style="width:auto;padding:10px 24px">添加分类</button>
     </form>
@@ -22,6 +23,7 @@
             <td>{{ cat.posts|length }}</td>
             <td class="admin-actions">
                 <form method="POST" action="/admin/categories/{{ cat.id }}/delete" style="display:inline">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                     <button class="btn-sm btn-danger" onclick="return confirm('删除分类「{{ cat.name }}」？关联的文章不会被删除，但分类会被清空。')">删除</button>
                 </form>
             </td>

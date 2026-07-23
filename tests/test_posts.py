@@ -1,4 +1,5 @@
 """文章 API 测试"""
+from io import BytesIO
 
 
 class TestPosts:
@@ -74,6 +75,27 @@ class TestPosts:
         assert data['post']['id'] == sample_post
         assert data['post']['title'] == '测试文章'
 
+    def test_post_detail_page_renders(self, client, sample_post):
+        """网页文章详情页可正常渲染"""
+        resp = client.get(f'/post/{sample_post}')
+        assert resp.status_code == 200
+        assert b'post-detail' in resp.data
+
+    def test_post_detail_sanitizes_markdown_html(self, client, auth_headers):
+        """Markdown 渲染会清理危险 HTML"""
+        resp = client.post('/api/posts', json={
+            'title': 'XSS 测试',
+            'content': '**安全内容** <script>alert(1)</script>'
+        }, headers=auth_headers)
+        post_id = resp.get_json()['post']['id']
+
+        detail = client.get(f'/post/{post_id}')
+        body = detail.data.decode('utf-8')
+        assert detail.status_code == 200
+        assert '<strong>安全内容</strong>' in body
+        assert '<script>alert(1)</script>' not in body
+        assert 'alert(1)' in body
+
     def test_get_post_not_found(self, client):
         """获取不存在的文章"""
         resp = client.get('/api/posts/99999')
@@ -97,3 +119,61 @@ class TestPosts:
         # 确认已删除
         resp = client.get(f'/api/posts/{sample_post}')
         assert resp.status_code == 404
+
+    def test_posts_per_page_is_capped(self, client):
+        """文章列表分页大小有上限"""
+        resp = client.get('/api/posts?per_page=999')
+        assert resp.status_code == 200
+        assert len(resp.get_json()['posts']) <= 50
+
+    def test_upload_rejects_svg(self, client, auth_headers):
+        """上传接口拒绝 SVG 文件"""
+        resp = client.post('/api/upload', data={
+            'file': (BytesIO(b'<svg></svg>'), 'bad.svg')
+        }, headers=auth_headers, content_type='multipart/form-data')
+        assert resp.status_code == 400
+
+    def test_publish_requires_csrf_token(self, client, auth_headers):
+        """网页发文表单需要 CSRF token"""
+        resp = client.post('/publish', data={
+            'title': '无 CSRF',
+            'content': '应被拦截'
+        }, follow_redirects=False)
+        assert resp.status_code == 302
+
+    def test_draft_post_is_not_public(self, client, auth_headers):
+        """草稿不会出现在公开列表和公开详情里"""
+        resp = client.post('/api/posts', json={
+            'title': '草稿文章',
+            'content': '暂时不公开',
+            'status': 'draft'
+        }, headers=auth_headers)
+        post_id = resp.get_json()['post']['id']
+
+        listing = client.get('/api/posts')
+        titles = [item['title'] for item in listing.get_json()['posts']]
+        assert '草稿文章' not in titles
+
+        public_client = client.application.test_client()
+        detail = public_client.get(f'/api/posts/{post_id}')
+        assert detail.status_code == 404
+
+    def test_tag_filtering(self, client, auth_headers):
+        """文章支持标签并可按标签筛选"""
+        resp = client.post('/api/posts', json={
+            'title': 'Flask 标签文章',
+            'content': 'tagged',
+            'tags': 'flask, python'
+        }, headers=auth_headers)
+        assert resp.status_code == 201
+
+        filtered = client.get('/api/posts?tag=flask')
+        titles = [item['title'] for item in filtered.get_json()['posts']]
+        assert 'Flask 标签文章' in titles
+
+    def test_rss_feed(self, client, sample_post):
+        """RSS feed 可访问"""
+        resp = client.get('/rss.xml')
+        assert resp.status_code == 200
+        assert resp.mimetype == 'application/rss+xml'
+        assert b'<rss' in resp.data

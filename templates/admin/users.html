@@ -19,12 +19,14 @@
             <td class="admin-actions">
                 {% if u.id != current_user.id %}
                 <form method="POST" action="/admin/users/{{ u.id }}/toggle-admin" style="display:inline">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                     <button class="btn-sm {% if u.role == 'admin' %}btn-warning{% else %}btn-primary{% endif %}"
                             onclick="return confirm('确认{{ "取消" if u.role == 'admin' else "设为" }}管理员？')">
                         {{ "取消管理员" if u.role == 'admin' else "设为管理员" }}
                     </button>
                 </form>
                 <form method="POST" action="/admin/users/{{ u.id }}/delete" style="display:inline">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                     <button class="btn-sm btn-danger" onclick="return confirm('确认删除用户 {{ u.username }}？所有文章和评论也会被删除')">删除</button>
                 </form>
                 {% else %}
@@ -35,4 +37,5 @@
         {% endfor %}
     </tbody>
 </table>
+{% include "admin/pagination.html" %}
 {% endblock %}

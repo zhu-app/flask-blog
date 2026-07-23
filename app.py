@@ -1,6 +1,8 @@
 import os
 import logging
 import traceback
+import hmac
+from secrets import token_urlsafe
 from flask import Flask, render_template, redirect, url_for, flash, session, send_from_directory, jsonify, request
 from config import Config
 from models import db
@@ -72,6 +74,38 @@ def register_error_handlers(app: Flask) -> None:
         return render_template('500.html'), 500
 
 
+def register_csrf_protection(app: Flask) -> None:
+    """Protect session-backed HTML forms from cross-site request forgery."""
+
+    def csrf_token() -> str:
+        token = session.get('_csrf_token')
+        if not token:
+            token = token_urlsafe(32)
+            session['_csrf_token'] = token
+        return token
+
+    @app.before_request
+    def validate_csrf_token():
+        if request.method not in {'POST', 'PUT', 'PATCH', 'DELETE'}:
+            return None
+        if request.path.startswith('/api/'):
+            return None
+
+        token = session.get('_csrf_token')
+        submitted = request.form.get('_csrf_token') or request.headers.get('X-CSRFToken')
+        if not token or not submitted or not hmac.compare_digest(token, submitted):
+            app.logger.warning(f'CSRF validation failed: {request.method} {request.path}')
+            if request.is_json:
+                return jsonify({'success': False, 'message': 'CSRF token invalid'}), 400
+            flash('请求已过期，请刷新页面后重试', 'error')
+            return redirect(url_for('posts.index'))
+        return None
+
+    @app.context_processor
+    def inject_csrf_token():
+        return dict(csrf_token=csrf_token)
+
+
 def create_app(config_class=None) -> Flask:
     if config_class is None:
         config_class = Config
@@ -124,6 +158,7 @@ def create_app(config_class=None) -> Flask:
 
     # 注册错误处理
     register_error_handlers(app)
+    register_csrf_protection(app)
 
     # 全局变量
     @app.context_processor
@@ -134,15 +169,6 @@ def create_app(config_class=None) -> Flask:
             from models import User
             user = db.session.get(User, int(user_id))
         return dict(current_user=user)
-
-    # 创建数据库表（非阻塞，失败时记录日志但继续运行）
-    with app.app_context():
-        try:
-            db.create_all()
-            app.logger.info('数据库表创建/检查完成')
-        except Exception as e:
-            app.logger.error(f'数据库连接失败: {e}')
-            app.logger.warning('应用将继续运行，但数据库功能不可用。请检查 MySQL 服务。')
 
     # 提供上传目录的静态文件
     upload_dir = os.path.join(app.root_path, 'uploads')

@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, redirect, url_for, session, flash
+from flask import Blueprint, request, jsonify, redirect, url_for, session, flash, current_app
 from flask_jwt_extended import get_jwt_identity
 from sqlalchemy.orm import joinedload
 from utils import login_required_web, login_required_api
@@ -37,24 +37,26 @@ def api_get_comments(post_id):
     """
     comments = Comment.query.options(
         joinedload(Comment.author)
-    ).filter_by(post_id=post_id).order_by(Comment.created_at.asc()).all()
+    ).filter_by(post_id=post_id, status='approved').order_by(Comment.created_at.asc()).all()
     return jsonify({'success': True, 'comments': [c.to_dict() for c in comments]})
 
 
 @comments_bp.route('/api/posts/<int:post_id>/comments', methods=['POST'])
 @login_required_api
 def api_create_comment(post_id):
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
     content = data.get('content', '').strip()
 
     if not content:
         return jsonify({'success': False, 'message': '评论内容不能为空'}), 400
 
-    comment = Comment(content=content, post_id=post_id, user_id=int(get_jwt_identity()))
+    status = 'pending' if current_app.config.get('COMMENT_REQUIRE_APPROVAL') else 'approved'
+    comment = Comment(content=content, post_id=post_id, user_id=int(get_jwt_identity()), status=status)
     db.session.add(comment)
     db.session.commit()
 
-    return jsonify({'success': True, 'message': '评论成功', 'comment': comment.to_dict()}), 201
+    message = '评论已提交，等待审核' if status == 'pending' else '评论成功'
+    return jsonify({'success': True, 'message': message, 'comment': comment.to_dict()}), 201
 
 
 # ========== 网页路由 ==========
@@ -68,11 +70,12 @@ def add_comment(post_id):
         flash('评论内容不能为空', 'error')
         return redirect(url_for('posts.post_detail', post_id=post_id))
 
-    comment = Comment(content=content, post_id=post_id, user_id=session['user_id'])
+    status = 'pending' if current_app.config.get('COMMENT_REQUIRE_APPROVAL') else 'approved'
+    comment = Comment(content=content, post_id=post_id, user_id=session['user_id'], status=status)
     db.session.add(comment)
     db.session.commit()
 
-    flash('评论成功！', 'success')
+    flash('评论已提交，等待审核' if status == 'pending' else '评论成功！', 'success')
     return redirect(url_for('posts.post_detail', post_id=post_id))
 
 
@@ -80,7 +83,7 @@ def add_comment(post_id):
 @login_required_web
 def delete_comment(comment_id):
     """删除评论：评论作者、文章作者、管理员均可删除"""
-    comment = Comment.query.get_or_404(comment_id)
+    comment = db.get_or_404(Comment, comment_id)
     post = db.session.get(Post, comment.post_id)
 
     user_id = session['user_id']

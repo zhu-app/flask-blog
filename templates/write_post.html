@@ -37,7 +37,11 @@
         <h1>{% if editing %}编辑文章{% else %}写一篇文章{% endif %}</h1>
 
         <form method="POST" action="{% if editing %}/edit/{{ post.id }}{% else %}/publish{% endif %}" class="post-form">
+            <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
             <input type="text" name="title" placeholder="文章标题" value="{{ post.title if editing else '' }}" required>
+            <input type="url" name="cover_image" placeholder="封面图片 URL（可选）" value="{{ post.cover_image if editing and post.cover_image else '' }}">
+            <input type="text" name="tags" placeholder="标签，用逗号分隔，例如 flask, python" value="{% if editing %}{{ post.tags|map(attribute='name')|join(', ') }}{% endif %}">
+            <textarea name="seo_description" placeholder="SEO 摘要（可选，不填会自动生成）" rows="2">{{ post.seo_description if editing and post.seo_description else '' }}</textarea>
 
             <!-- 分类选择 -->
             <div class="category-row">
@@ -104,7 +108,8 @@
             </div>
 
             <div class="form-actions">
-                <button type="submit">{% if editing %}更新文章{% else %}发布文章{% endif %}</button>
+                <button type="submit" name="action" value="published">{% if editing %}更新并发布{% else %}发布文章{% endif %}</button>
+                <button type="submit" name="action" value="draft" class="btn-outline">保存草稿</button>
                 <a href="/" class="cancel-btn">取消</a>
             </div>
         </form>

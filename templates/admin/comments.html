@@ -3,27 +3,47 @@
 {% block content %}
 <h1>💬 评论管理</h1>
 
+<div class="admin-filters">
+    <a href="/admin/comments" class="btn-sm">全部</a>
+    <a href="/admin/comments?status=pending" class="btn-sm">待审核</a>
+    <a href="/admin/comments?status=approved" class="btn-sm">已通过</a>
+    <a href="/admin/comments?status=hidden" class="btn-sm">已隐藏</a>
+</div>
+
 <table class="admin-table">
     <thead>
-        <tr><th>ID</th><th>内容</th><th>评论者</th><th>所属文章</th><th>时间</th><th>操作</th></tr>
+        <tr><th>ID</th><th>内容</th><th>状态</th><th>评论者</th><th>所属文章</th><th>时间</th><th>操作</th></tr>
     </thead>
     <tbody>
         {% for c in comments %}
         <tr>
             <td>{{ c.id }}</td>
             <td>{{ c.content[:50] }}{% if c.content|length > 50 %}...{% endif %}</td>
+            <td><span class="status-badge {{ c.status }}">{{ c.status }}</span></td>
             <td>{{ c.author.username if c.author else '未知' }}</td>
             <td><a href="/post/{{ c.post.id }}">{{ c.post.title[:30] if c.post else '已删除' }}</a></td>
             <td>{{ c.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
             <td class="admin-actions">
+                <form method="POST" action="/admin/comments/{{ c.id }}/status" style="display:inline">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="status" value="approved">
+                    <button class="btn-sm btn-primary">通过</button>
+                </form>
+                <form method="POST" action="/admin/comments/{{ c.id }}/status" style="display:inline">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="status" value="hidden">
+                    <button class="btn-sm btn-warning">隐藏</button>
+                </form>
                 <form method="POST" action="/admin/comments/{{ c.id }}/delete" style="display:inline">
+                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                     <button class="btn-sm btn-danger" onclick="return confirm('确认删除评论？')">删除</button>
                 </form>
             </td>
         </tr>
         {% else %}
-        <tr><td colspan="6" class="empty-td">暂无评论</td></tr>
+        <tr><td colspan="7" class="empty-td">暂无评论</td></tr>
         {% endfor %}
     </tbody>
 </table>
+{% include "admin/pagination.html" %}
 {% endblock %}

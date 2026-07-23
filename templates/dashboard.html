@@ -34,7 +34,7 @@
 
         <!-- 页面标题 -->
         <div class="dash-header">
-            <div class="dash-avatar">👤</div>
+            <div class="dash-avatar">{% if user.avatar_url %}<img src="{{ user.avatar_url }}" alt="{{ user.username }}">{% else %}👤{% endif %}</div>
             <div>
                 <h1>{{ user.username }} 的个人中心</h1>
                 <p class="dash-subtitle">
@@ -49,6 +49,10 @@
             <div class="stat-card">
                 <div class="stat-number">{{ stats.post_count }}</div>
                 <div class="stat-label">📝 文章</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ stats.draft_count }}</div>
+                <div class="stat-label">草稿</div>
             </div>
             <div class="stat-card">
                 <div class="stat-number">{{ stats.total_views }}</div>
@@ -73,6 +77,15 @@
             {% endif %}
         </div>
 
+        <div class="dash-section">
+            <h2>个人资料</h2>
+            <form method="POST" action="/dashboard/profile" class="profile-form">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
+                <input type="url" name="avatar_url" placeholder="头像图片 URL" value="{{ user.avatar_url or '' }}">
+                <button type="submit" class="btn btn-primary">保存资料</button>
+            </form>
+        </div>
+
         <!-- 文章列表 -->
         <div class="dash-section">
             <h2>📝 我的文章</h2>
@@ -84,6 +97,7 @@
                     <tr>
                         <th>标题</th>
                         <th>分类</th>
+                        <th>状态</th>
                         <th class="col-center">👁️</th>
                         <th class="col-center">❤️</th>
                         <th class="col-center">💬</th>
@@ -98,6 +112,7 @@
                             <a href="/post/{{ post.id }}">{{ post.title[:50] }}{% if post.title|length > 50 %}...{% endif %}</a>
                         </td>
                         <td>{{ post.category.name if post.category else '-' }}</td>
+                        <td><span class="status-badge {{ post.status }}">{{ '草稿' if post.status == 'draft' else '已发布' }}</span></td>
                         <td class="col-center">{{ post.views }}</td>
                         <td class="col-center">{{ post.likes }}</td>
                         <td class="col-center">{{ post.comment_count }}</td>
@@ -107,6 +122,7 @@
                                 <a href="/edit/{{ post.id }}" class="btn-sm btn-primary">编辑</a>
                                 <form method="POST" action="/dashboard/post/{{ post.id }}/delete"
                                       onsubmit="return confirm('确认删除「{{ post.title }}」？')">
+                                    <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                                     <button class="btn-sm btn-danger">删除</button>
                                 </form>
                             </div>
@@ -135,6 +151,7 @@
                     {% if user.role == 'admin' %}
                     <form method="POST" action="/admin/categories/{{ cat.id }}/delete" style="display:inline"
                           onsubmit="return confirm('删除分类「{{ cat.name }}」？文章不会丢失，但会变为无分类。')">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token() }}">
                         <button class="cat-del-btn" title="删除分类">✕</button>
                     </form>
                     {% endif %}

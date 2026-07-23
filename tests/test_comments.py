@@ -40,3 +40,15 @@ class TestComments:
         assert resp.status_code == 200
         assert len(data['comments']) >= 1
         assert data['comments'][0]['content'] == '测试评论'
+
+    def test_pending_comments_are_hidden_from_public_api(self, client, auth_headers, sample_post, db):
+        """待审核评论不会出现在公开评论 API 中"""
+        from models import Comment, User
+        user = User.query.filter_by(username='testuser').first()
+        comment = Comment(content='待审核评论', post_id=sample_post, user_id=user.id, status='pending')
+        db.session.add(comment)
+        db.session.commit()
+
+        resp = client.get(f'/api/posts/{sample_post}/comments')
+        contents = [item['content'] for item in resp.get_json()['comments']]
+        assert '待审核评论' not in contents

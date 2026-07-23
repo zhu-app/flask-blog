@@ -12,6 +12,8 @@ class Config:
     TEMPLATES_AUTO_RELOAD = True
     JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'jwt-secret-key-change-in-production')
     JWT_ACCESS_TOKEN_EXPIRES = 3600 * 24  # 24小时
+    MAX_CONTENT_LENGTH = int(os.getenv('MAX_CONTENT_LENGTH', 5 * 1024 * 1024))
+    COMMENT_REQUIRE_APPROVAL = os.getenv('COMMENT_REQUIRE_APPROVAL', 'false').lower() == 'true'
 
     @classmethod
     def check_secrets(cls):
